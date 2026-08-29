@@ -1,0 +1,229 @@
+-- ==============================================================================
+-- AI-HRMS (AI-Powered Human Resource Management System)
+-- Enterprise Database Schema DDL (PostgreSQL & SQLite Compatible)
+-- ==============================================================================
+
+-- 1. USERS TABLE (Authentication & Global RBAC)
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    hashed_password VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL DEFAULT 'EMPLOYEE', -- SUPER_ADMIN, HR_MANAGER, DEPARTMENT_MANAGER, TEAM_LEADER, RECRUITER, EMPLOYEE, CANDIDATE
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+
+-- 2. DEPARTMENTS TABLE
+CREATE TABLE IF NOT EXISTS departments (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) UNIQUE NOT NULL,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    manager_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. TEAMS TABLE
+CREATE TABLE IF NOT EXISTS teams (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    department_id INTEGER NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
+    team_leader_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_teams_dept ON teams(department_id);
+
+-- 4. EMPLOYEES TABLE (Staff Directory & Payroll Attributes)
+CREATE TABLE IF NOT EXISTS employees (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    employee_code VARCHAR(50) UNIQUE NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(50),
+    designation VARCHAR(150) NOT NULL,
+    department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    team_id INTEGER REFERENCES teams(id) ON DELETE SET NULL,
+    joining_date DATE NOT NULL,
+    employment_status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE, PROBATION, INACTIVE, TERMINATED
+    monthly_salary DOUBLE PRECISION NOT NULL DEFAULT 50000.0,
+    allowances DOUBLE PRECISION NOT NULL DEFAULT 3000.0,
+    tax_percentage DOUBLE PRECISION NOT NULL DEFAULT 10.0,
+    pf_percentage DOUBLE PRECISION NOT NULL DEFAULT 12.0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_employees_code ON employees(employee_code);
+CREATE INDEX IF NOT EXISTS idx_employees_dept ON employees(department_id);
+
+-- 5. ATTENDANCE TABLE (GPS Geofence & Haversine Distance Logs)
+CREATE TABLE IF NOT EXISTS attendance (
+    id SERIAL PRIMARY KEY,
+    employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    punch_in TIMESTAMP WITH TIME ZONE,
+    punch_out TIMESTAMP WITH TIME ZONE,
+    punch_in_lat DOUBLE PRECISION,
+    punch_in_lng DOUBLE PRECISION,
+    punch_out_lat DOUBLE PRECISION,
+    punch_out_lng DOUBLE PRECISION,
+    distance_in_meters DOUBLE PRECISION,
+    verification_status VARCHAR(50) NOT NULL DEFAULT 'VERIFIED', -- VERIFIED, REJECTED, MANUAL_REVIEW
+    work_duration_hours DOUBLE PRECISION DEFAULT 0.0,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_attendance_emp_date ON attendance(employee_id, date);
+
+-- 6. LEAVE REQUESTS TABLE (Multi-Tier Business Approval Routing)
+CREATE TABLE IF NOT EXISTS leave_requests (
+    id SERIAL PRIMARY KEY,
+    employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    leave_type VARCHAR(50) NOT NULL, -- CASUAL, SICK, EARNED, UNPAID
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    duration_days INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'APPROVED', -- APPROVED, PENDING_TL, PENDING_MANAGER, REJECTED
+    approver_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    approved_at TIMESTAMP WITH TIME ZONE,
+    rejection_reason TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_leaves_emp ON leave_requests(employee_id);
+CREATE INDEX IF NOT EXISTS idx_leaves_status ON leave_requests(status);
+
+-- 7. LEAVE BALANCES TABLE
+CREATE TABLE IF NOT EXISTS leave_balances (
+    id SERIAL PRIMARY KEY,
+    employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    casual_leave INTEGER NOT NULL DEFAULT 12,
+    sick_leave INTEGER NOT NULL DEFAULT 10,
+    earned_leave INTEGER NOT NULL DEFAULT 15,
+    year INTEGER NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 8. RECRUITMENT: JOBS TABLE
+CREATE TABLE IF NOT EXISTS jobs (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    department_id INTEGER REFERENCES departments(id) ON DELETE SET NULL,
+    description TEXT NOT NULL,
+    required_skills TEXT NOT NULL, -- JSON Array string or comma-separated keywords
+    experience_required_years DOUBLE PRECISION NOT NULL DEFAULT 2.0,
+    location VARCHAR(150) NOT NULL DEFAULT 'Bangalore, India',
+    employment_type VARCHAR(50) NOT NULL DEFAULT 'Full-time',
+    salary_range VARCHAR(100),
+    status VARCHAR(50) NOT NULL DEFAULT 'OPEN', -- OPEN, DRAFT, CLOSED
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 9. RECRUITMENT: CANDIDATES TABLE (AI Resume Parser & Scores)
+CREATE TABLE IF NOT EXISTS candidates (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    job_id INTEGER REFERENCES jobs(id) ON DELETE SET NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(50),
+    resume_file_path VARCHAR(500),
+    parsed_skills TEXT, -- JSON Array
+    experience_years DOUBLE PRECISION DEFAULT 0.0,
+    education TEXT,
+    match_score DOUBLE PRECISION DEFAULT 0.0,
+    suggested_department VARCHAR(100),
+    ai_summary TEXT,
+    status VARCHAR(50) NOT NULL DEFAULT 'APPLIED', -- APPLIED, AI_SCREENED, SHORTLISTED, INTERVIEW, SELECTED, REJECTED
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 10. PAYROLL TABLE (Monthly Batches)
+CREATE TABLE IF NOT EXISTS payrolls (
+    id SERIAL PRIMARY KEY,
+    month INTEGER NOT NULL,
+    year INTEGER NOT NULL,
+    total_working_days INTEGER NOT NULL DEFAULT 22,
+    status VARCHAR(50) NOT NULL DEFAULT 'PROCESSED', -- DRAFT, PROCESSED, PAID
+    processed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    processed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    notes TEXT,
+    total_employees INTEGER DEFAULT 0,
+    total_net_disbursed DOUBLE PRECISION DEFAULT 0.0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 11. PAYROLL ITEMS TABLE (Detailed Salary Breakdown with LWP Deductions)
+CREATE TABLE IF NOT EXISTS payroll_items (
+    id SERIAL PRIMARY KEY,
+    payroll_id INTEGER NOT NULL REFERENCES payrolls(id) ON DELETE CASCADE,
+    employee_id INTEGER NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+    working_days INTEGER NOT NULL DEFAULT 22,
+    present_days INTEGER NOT NULL DEFAULT 22,
+    approved_leave_days INTEGER NOT NULL DEFAULT 0,
+    lwp_days INTEGER NOT NULL DEFAULT 0,
+    per_day_rate DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    basic_salary DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    allowances DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    lwp_deduction DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    pf_deduction DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    tax_deduction DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    other_deductions DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    total_earnings DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    total_deductions DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    net_salary DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    payslip_url VARCHAR(500),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 12. NOTIFICATIONS TABLE
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    type VARCHAR(50) NOT NULL DEFAULT 'INFO', -- INFO, SUCCESS, WARNING, ALERT
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 13. AUDIT LOGS TABLE (Security & Governance Trail)
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    user_email VARCHAR(255),
+    action VARCHAR(100) NOT NULL,
+    module VARCHAR(50) NOT NULL,
+    record_id VARCHAR(100),
+    details TEXT,
+    ip_address VARCHAR(50),
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 14. OFFICE SETTINGS TABLE (GPS & Geofence Coordinates)
+CREATE TABLE IF NOT EXISTS office_settings (
+    id SERIAL PRIMARY KEY,
+    office_name VARCHAR(150) NOT NULL DEFAULT 'Headquarters',
+    latitude DOUBLE PRECISION NOT NULL DEFAULT 12.9715987,
+    longitude DOUBLE PRECISION NOT NULL DEFAULT 77.5945627,
+    geofence_radius DOUBLE PRECISION NOT NULL DEFAULT 100.0,
+    office_address VARCHAR(255) DEFAULT 'MG Road Tech Park, Bangalore, India',
+    work_start_time VARCHAR(10) DEFAULT '09:00',
+    work_end_time VARCHAR(10) DEFAULT '18:00',
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: ai_hrms_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ai_hrms_db
+      POSTGRES_USER: hrms_user
+      POSTGRES_PASSWORD: hrms_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+  # 2. FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ai_hrms_backend
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://hrms_user:hrms_password@postgres:5432/ai_hrms_db
+      SECRET_KEY: ai_hrms_super_secure_enterprise_secret_jwt_key_2026_prod
+      AI_DEMO_MODE: "true"
+      GEOFENCE_RADIUS_METERS: "100.0"
+      OFFICE_LATITUDE: "12.9715987"
+      OFFICE_LONGITUDE: "77.5945627"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+
+  # 3. Vite React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ai_hrms_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  pgdata:
