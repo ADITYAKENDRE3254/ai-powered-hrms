@@ -18,17 +18,22 @@ from app.models.notification import Notification, NotificationType
 from app.models.setting import OfficeSetting
 from app.services.pdf_service import generate_payslip_pdf
 
-def seed_database():
+def seed_database(reset: bool = False):
     print("🌱 Initializing database tables and seeding demo data...")
+    if reset or "--reset" in sys.argv or "--force" in sys.argv:
+        print("🔄 Resetting database tables for a fresh demo dataset...")
+        Base.metadata.drop_all(bind=engine)
+    
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
     try:
         # Check if already seeded
-        if db.query(User).filter(User.email == "admin@hrms.local").first():
-            print("Database already contains seed data. Refreshing office settings and balances...")
-            db.close()
-            return
+        if not reset and "--reset" not in sys.argv and "--force" not in sys.argv:
+            if db.query(User).filter(User.email == "admin@hrms.local").first():
+                print("Database already contains seed data. Run with '--reset' to refresh with fresh demo data.")
+                db.close()
+                return
 
         # 1. Office Geofence Setting (Bangalore Tech Park)
         office = OfficeSetting(
