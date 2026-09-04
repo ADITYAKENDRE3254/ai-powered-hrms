@@ -2,6 +2,7 @@ import re
 import os
 import json
 from typing import Dict, List, Tuple, Optional, Any
+from datetime import date
 import pypdf
 import docx
 from sqlalchemy.orm import Session
@@ -260,7 +261,7 @@ def handle_ai_hr_assistant_chat(
     if any(k in msg_lower for k in ["other employee", "colleague salary", "ceo salary", "admin password", "manager salary", "all salaries", "all employees"]):
         if user.role not in [UserRole.SUPER_ADMIN, UserRole.HR_MANAGER]:
             return {
-                "reply": "🔒 **Security & Privacy Boundary**: I cannot provide personal, salary, or attendance information for other employees. As an employee, you are only authorized to query your own records.",
+                "reply": "🔒 **Security & Privacy Boundary**: I cannot provide personal, salary, or attendance information for other employees. As an employee, you are only authorized to query your own attendance, leave balance, payslips, and personal employment information. For cross-organization data access, please contact your HR Manager or Department Lead.",
                 "is_demo_mode": settings.AI_DEMO_MODE or not settings.AI_API_KEY,
                 "suggested_actions": ["View My Profile", "View My Attendance", "View My Leave Balance"]
             }
@@ -337,10 +338,12 @@ def handle_ai_hr_assistant_chat(
                 "suggested_actions": ["Download Latest Payslip", "View Salary Structure"]
             }
         else:
+            # Safe access with defensive check
+            salary_display = f"${emp.monthly_salary:,.2f}" if emp and emp.monthly_salary else "$0.00"
             return {
                 "reply": (
                     f"💵 **Salary Information**:\n"
-                    f"- Your base monthly salary is set to **${emp.monthly_salary:,.2f}**.\n"
+                    f"- Your base monthly salary is set to **{salary_display}**.\n"
                     f"Once monthly payroll is processed by HR, your official downloadable PDF payslip will appear in your portal."
                 ),
                 "is_demo_mode": settings.AI_DEMO_MODE or not settings.AI_API_KEY,
