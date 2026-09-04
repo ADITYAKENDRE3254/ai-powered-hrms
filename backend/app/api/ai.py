@@ -1,3 +1,4 @@
+import json
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -47,7 +48,6 @@ def match_candidate(
     candidate_skills = []
     if candidate.extracted_skills:
         try:
-            import json
             candidate_skills = json.loads(candidate.extracted_skills)
         except Exception:
             candidate_skills = [s.strip() for s in candidate.extracted_skills.split(",") if s.strip()]
