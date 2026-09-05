@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { auditService } from '../services/report.service';
 import { AuditLog } from '../types';
-import { ShieldCheck, Search, Filter, ShieldAlert, Clock, User } from 'lucide-react';
+import { EmptyState } from '../components/common/EmptyState';
+import { ShieldCheck, Search, Filter, ShieldAlert, Clock, User, Shield } from 'lucide-react';
 
 export const AuditLogsPage: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -28,13 +29,18 @@ export const AuditLogsPage: React.FC = () => {
   }, [moduleFilter]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Security & Compliance Audit Trail</h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Immutable log of all user activities, status approvals, payroll generations, and geofence events.
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+              Security & Compliance Audit Trail
+            </h1>
+            <span className="ai-badge">✦ Immutable Log</span>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Immutable system activity ledger of all user authentications, status approvals, payroll generations, and geofence events.
           </p>
         </div>
 
@@ -42,7 +48,7 @@ export const AuditLogsPage: React.FC = () => {
           <select
             value={moduleFilter}
             onChange={(e) => setModuleFilter(e.target.value)}
-            className="text-xs px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="text-xs px-4 py-2.5 bg-white dark:bg-navy-900 border border-slate-200 dark:border-navy-700 text-slate-900 dark:text-white rounded-2xl shadow-apple focus:outline-none focus:ring-2 focus:ring-brand-500"
           >
             <option value="">All Security Modules</option>
             <option value="AUTH">Authentication (Login/Logout)</option>
@@ -56,43 +62,49 @@ export const AuditLogsPage: React.FC = () => {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-navy-900 rounded-3xl border border-slate-200/80 dark:border-navy-800 shadow-apple overflow-hidden transition-all">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+            <thead className="bg-slate-50/80 dark:bg-navy-950/80 text-slate-600 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-navy-800">
               <tr>
-                <th className="py-3 px-4">Timestamp</th>
-                <th className="py-3 px-4">User</th>
-                <th className="py-3 px-4">Module</th>
-                <th className="py-3 px-4">Action</th>
-                <th className="py-3 px-4">IP Address</th>
-                <th className="py-3 px-4">Details</th>
+                <th className="py-3.5 px-5">Timestamp</th>
+                <th className="py-3.5 px-5">User</th>
+                <th className="py-3.5 px-5">Module</th>
+                <th className="py-3.5 px-5">Action</th>
+                <th className="py-3.5 px-5">IP Address</th>
+                <th className="py-3.5 px-5">Details</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-navy-800">
               {logs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-slate-400">
-                    No audit records matching filter criteria.
+                  <td colSpan={6} className="p-0">
+                    <EmptyState
+                      title="No Audit Records Found"
+                      description="No security events recorded under this filter."
+                    />
                   </td>
                 </tr>
               ) : (
                 logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50/60">
-                    <td className="py-3.5 px-4 font-mono text-slate-500">
+                  <tr
+                    key={log.id}
+                    className="hover:bg-slate-50/60 dark:hover:bg-navy-800/40 transition-colors"
+                  >
+                    <td className="py-4 px-5 font-mono text-slate-500 dark:text-slate-400">
                       {new Date(log.created_at).toLocaleString()}
                     </td>
-                    <td className="py-3.5 px-4 font-bold text-slate-900">
+                    <td className="py-4 px-5 font-bold text-slate-900 dark:text-white">
                       {log.user_email || 'System'}
                     </td>
-                    <td className="py-3.5 px-4">
-                      <span className="px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-bold">
+                    <td className="py-4 px-5">
+                      <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-navy-800 border border-slate-200 dark:border-navy-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold">
                         {log.module}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-800">{log.action}</td>
-                    <td className="py-3.5 px-4 font-mono text-slate-500">{log.ip_address || '127.0.0.1'}</td>
-                    <td className="py-3.5 px-4 text-slate-600 max-w-md truncate">{log.details || '-'}</td>
+                    <td className="py-4 px-5 font-semibold text-slate-800 dark:text-slate-200">{log.action}</td>
+                    <td className="py-4 px-5 font-mono text-slate-500 dark:text-slate-400">{log.ip_address || '127.0.0.1'}</td>
+                    <td className="py-4 px-5 text-slate-600 dark:text-slate-300 max-w-md truncate">{log.details || '-'}</td>
                   </tr>
                 ))
               )}

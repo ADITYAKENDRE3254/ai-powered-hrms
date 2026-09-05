@@ -3,24 +3,141 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-canvas: #fafafc;
+    --color-surface: #ffffff;
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #475569;
+    --color-border: rgba(226, 232, 240, 0.85);
+  }
+
+  .dark {
+    --color-canvas: #0b0f19;
+    --color-surface: #0f172a;
+    --color-text-primary: #f8fafc;
+    --color-text-secondary: #94a3b8;
+    --color-border: rgba(30, 41, 59, 0.85);
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900 min-h-screen antialiased;
+    @apply bg-[#FAFAFC] dark:bg-navy-950 text-slate-900 dark:text-slate-100 min-h-screen antialiased selection:bg-brand-500/20 selection:text-brand-600;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Segoe UI", Roboto, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-slate-900 dark:text-white font-bold tracking-tight;
   }
 }
 
-/* Custom Scrollbar */
+/* Glassmorphism & Apple Card Surfaces */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+}
+
+.dark .glass-panel {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(30, 41, 59, 0.85);
+}
+
+.ai-card-surface {
+  position: relative;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+}
+
+.dark .ai-card-surface {
+  background: #0f172a;
+  border: 1px solid rgba(30, 41, 59, 0.85);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* AI Indicator Badges & Micro-Labels */
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(6, 182, 212, 0.08) 100%);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  color: #2563eb;
+}
+
+.dark .ai-badge {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: #38bdf8;
+}
+
+.ai-badge-purple {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(37, 99, 235, 0.08) 100%);
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  color: #7c3aed;
+}
+
+.dark .ai-badge-purple {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.18) 0%, rgba(37, 99, 235, 0.18) 100%);
+  border: 1px solid rgba(168, 85, 247, 0.35);
+  color: #c084fc;
+}
+
+.ai-gradient-text {
+  background: linear-gradient(135deg, #2563eb 0%, #06b6d4 50%, #7c3aed 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dark .ai-gradient-text {
+  background: linear-gradient(135deg, #60a5fa 0%, #22d3ee 50%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Subtle Interactive Buttons & Micro-Interactions */
+.btn-primary {
+  @apply px-5 py-2.5 rounded-2xl bg-gradient-to-r from-brand-600 via-blue-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white text-xs font-bold shadow-apple shadow-brand-600/30 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2;
+}
+
+.btn-secondary {
+  @apply px-4 py-2.5 rounded-2xl bg-white dark:bg-navy-900 hover:bg-slate-50 dark:hover:bg-navy-800 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200/80 dark:border-navy-800 shadow-apple transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2;
+}
+
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 4px;
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }

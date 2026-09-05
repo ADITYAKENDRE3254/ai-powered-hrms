@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Sidebar } from './components/common/Sidebar';
 import { Header } from './components/common/Header';
+import { CommandPalette } from './components/common/CommandPalette';
 import { AIHRAssistantDrawer } from './components/ai/AIHRAssistantDrawer';
 
 // Pages
@@ -25,6 +27,14 @@ import { PayrollPage } from './pages/PayrollPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { AuditLogsPage } from './pages/AuditLogsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { WorkforceDashboard } from './pages/workforce/WorkforceDashboard';
+import { PerformanceInsights } from './pages/workforce/PerformanceInsights';
+import { AttritionInsights } from './pages/workforce/AttritionInsights';
+import { SkillIntelligence } from './pages/workforce/SkillIntelligence';
+import { DepartmentIntelligence } from './pages/workforce/DepartmentIntelligence';
+import { MyAIInsights } from './pages/workforce/MyAIInsights';
+import { TrainingDashboard } from './pages/training/TrainingDashboard';
+import { MyTraining } from './pages/training/MyTraining';
 
 // Layout Container
 const AppLayout: React.FC<{ children: React.ReactNode; pageTitle: string; pageSubtitle?: string }> = ({
@@ -33,19 +43,35 @@ const AppLayout: React.FC<{ children: React.ReactNode; pageTitle: string; pageSu
   pageSubtitle,
 }) => {
   const [isAIChatOpen, setIsAIChatOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenCommandPalette = () => setIsCommandPaletteOpen(true);
+    window.addEventListener('open-command-palette', handleOpenCommandPalette);
+    return () => window.removeEventListener('open-command-palette', handleOpenCommandPalette);
+  }, []);
 
   return (
-    <div className="min-h-screen flex bg-slate-100 font-sans text-slate-900">
+    <div className="min-h-screen flex bg-slate-50 dark:bg-navy-950 font-sans text-slate-900 dark:text-slate-100 transition-colors">
       <Sidebar onOpenAIChat={() => setIsAIChatOpen(true)} />
       <div className="flex-1 flex flex-col min-w-0">
         <Header
           title={pageTitle}
           subtitle={pageSubtitle}
           onOpenAIChat={() => setIsAIChatOpen(true)}
+          onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
         />
-        <main className="flex-1 p-6 sm:p-8 max-w-7xl w-full mx-auto">{children}</main>
+        <main className="flex-1 p-5 sm:p-7 lg:p-8 max-w-7xl w-full mx-auto animate-fade-in">{children}</main>
       </div>
       <AIHRAssistantDrawer isOpen={isAIChatOpen} onClose={() => setIsAIChatOpen(false)} />
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onOpenAIChat={() => {
+          setIsCommandPaletteOpen(false);
+          setIsAIChatOpen(true);
+        }}
+      />
     </div>
   );
 };
@@ -87,10 +113,11 @@ const RootRedirector: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <NotificationProvider>
-        <BrowserRouter>
-          <Routes>
+    <ThemeProvider>
+      <AuthProvider>
+        <NotificationProvider>
+          <BrowserRouter>
+            <Routes>
             {/* Public Auth Route */}
             <Route path="/login" element={<Login />} />
 
@@ -275,12 +302,103 @@ export const App: React.FC = () => {
               }
             />
 
+            {/* AI Workforce Intelligence Routes */}
+            <Route
+              path="/workforce-intelligence"
+              element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'TEAM_LEADER']}>
+                  <AppLayout pageTitle="AI Workforce Intelligence" pageSubtitle="Predictive performance, retention risk, skill gaps & training roadmaps">
+                    <WorkforceDashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/workforce-intelligence/performance"
+              element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'TEAM_LEADER']}>
+                  <AppLayout pageTitle="Performance Predictions" pageSubtitle="Multi-factor performance evaluations and growth actions">
+                    <PerformanceInsights />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/workforce-intelligence/attrition"
+              element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER']}>
+                  <AppLayout pageTitle="Attrition Risk Radar" pageSubtitle="Confidential retention indicators, protective signals & interventions">
+                    <AttritionInsights />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/workforce-intelligence/skills"
+              element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'TEAM_LEADER']}>
+                  <AppLayout pageTitle="Skill Intelligence Hub" pageSubtitle="Employee competency profiles, role benchmark gaps & future skills">
+                    <SkillIntelligence />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/workforce-intelligence/departments"
+              element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER']}>
+                  <AppLayout pageTitle="Department Matrix" pageSubtitle="Departmental metrics, skill density & talent heatmaps">
+                    <DepartmentIntelligence />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/my-ai-insights"
+              element={
+                <ProtectedRoute allowedRoles={['EMPLOYEE', 'SUPER_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'TEAM_LEADER', 'RECRUITER']}>
+                  <AppLayout pageTitle="My AI Growth Insights" pageSubtitle="Personal performance signals, skill portfolio & career recommendations">
+                    <MyAIInsights />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Training Management Routes */}
+            <Route
+              path="/training"
+              element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER']}>
+                  <AppLayout pageTitle="Training & Learning Management" pageSubtitle="Enterprise course catalog, employee assignments & certifications">
+                    <TrainingDashboard />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/my-training"
+              element={
+                <ProtectedRoute allowedRoles={['EMPLOYEE', 'SUPER_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER', 'TEAM_LEADER', 'RECRUITER']}>
+                  <AppLayout pageTitle="My Training & Upskilling" pageSubtitle="Course progress tracking, certificate upload & skill completion">
+                    <MyTraining />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </NotificationProvider>
     </AuthProvider>
+  </ThemeProvider>
   );
 };
 export default App;

@@ -606,7 +606,145 @@ def seed_database(reset: bool = False):
             db.add(Notification(user_id=uid, title=title, message=msg, type=ntype))
         db.commit()
 
-        print("✅ Database successfully seeded with demo accounts, departments, employees, jobs, attendance, leaves, and payslips!")
+        # 12. Workforce Intelligence Seed: Skill Categories & Skills
+        from app.models.employee_skill import SkillCategory, Skill, EmployeeSkill, SkillLevel, SkillSource
+        from app.models.training import TrainingProgram, TrainingAssignment, TrainingDifficulty, AssignmentStatus
+
+        skill_cat_data = [
+            ("Programming & Engineering", "Languages, frameworks, database architecture, and software development."),
+            ("Cloud & DevOps", "Cloud platforms, containerization, CI/CD, and infrastructure automation."),
+            ("AI & Data Science", "Machine learning, neural networks, NLP, LLMs, and data analytics."),
+            ("People & HR Strategy", "Talent management, people analytics, employee engagement, and labor relations."),
+            ("Finance & Business Ops", "Financial analysis, budgeting, risk management, and operations.")
+        ]
+
+        skill_cats = {}
+        for cname, cdesc in skill_cat_data:
+            sc = SkillCategory(name=cname, description=cdesc, is_active=True)
+            db.add(sc)
+            db.flush()
+            skill_cats[cname] = sc
+
+        skills_dict = {
+            "Programming & Engineering": ["Python", "FastAPI", "React", "TypeScript", "SQL", "PostgreSQL", "System Design"],
+            "Cloud & DevOps": ["Docker", "Kubernetes", "AWS", "CI/CD", "Linux"],
+            "AI & Data Science": ["Machine Learning", "PyTorch", "NLP", "LangChain", "Vector DB", "Prompt Engineering"],
+            "People & HR Strategy": ["Talent Acquisition", "Performance Management", "Workforce Planning", "HRIS"],
+            "Finance & Business Ops": ["Financial Modeling", "Budgeting", "Auditing", "Tax Planning"]
+        }
+
+        created_skills = {}
+        for cname, slist in skills_dict.items():
+            cat = skill_cats[cname]
+            for sname in slist:
+                sk = Skill(name=sname, category_id=cat.id, description=f"{sname} competency", is_active=True)
+                db.add(sk)
+                db.flush()
+                created_skills[sname] = sk
+        db.commit()
+
+        # 13. Map Skills to Employees
+        emp_skill_mappings = {
+            "admin@hrms.local": [("Python", SkillLevel.EXPERT, 95.0), ("FastAPI", SkillLevel.EXPERT, 95.0), ("System Design", SkillLevel.EXPERT, 92.0), ("AWS", SkillLevel.ADVANCED, 88.0)],
+            "hr@hrms.local": [("Talent Acquisition", SkillLevel.EXPERT, 95.0), ("Performance Management", SkillLevel.EXPERT, 92.0), ("Workforce Planning", SkillLevel.ADVANCED, 88.0), ("HRIS", SkillLevel.ADVANCED, 90.0)],
+            "deptmanager@hrms.local": [("Python", SkillLevel.ADVANCED, 90.0), ("System Design", SkillLevel.EXPERT, 92.0), ("Docker", SkillLevel.ADVANCED, 85.0), ("Kubernetes", SkillLevel.INTERMEDIATE, 80.0)],
+            "teamlead@hrms.local": [("Python", SkillLevel.ADVANCED, 90.0), ("FastAPI", SkillLevel.ADVANCED, 88.0), ("PostgreSQL", SkillLevel.ADVANCED, 85.0), ("Docker", SkillLevel.INTERMEDIATE, 80.0)],
+            "recruiter@hrms.local": [("Talent Acquisition", SkillLevel.ADVANCED, 88.0), ("Performance Management", SkillLevel.INTERMEDIATE, 78.0), ("HRIS", SkillLevel.INTERMEDIATE, 82.0)],
+            "employee@hrms.local": [("Python", SkillLevel.INTERMEDIATE, 85.0), ("FastAPI", SkillLevel.INTERMEDIATE, 82.0), ("React", SkillLevel.INTERMEDIATE, 80.0), ("SQL", SkillLevel.INTERMEDIATE, 82.0)],
+            "john.doe@hrms.local": [("React", SkillLevel.INTERMEDIATE, 80.0), ("TypeScript", SkillLevel.INTERMEDIATE, 78.0), ("SQL", SkillLevel.BEGINNER, 70.0)],
+            "priya.sharma@hrms.local": [("Python", SkillLevel.ADVANCED, 90.0), ("Machine Learning", SkillLevel.ADVANCED, 88.0), ("PyTorch", SkillLevel.INTERMEDIATE, 82.0), ("NLP", SkillLevel.INTERMEDIATE, 80.0)],
+            "david.miller@hrms.local": [("Financial Modeling", SkillLevel.INTERMEDIATE, 85.0), ("Budgeting", SkillLevel.INTERMEDIATE, 80.0), ("Auditing", SkillLevel.BEGINNER, 75.0)]
+        }
+
+        for user_email, skill_tuples in emp_skill_mappings.items():
+            if user_email in emps:
+                e_obj = emps[user_email]
+                for sname, slevel, sconf in skill_tuples:
+                    sk_obj = created_skills.get(sname)
+                    esk = EmployeeSkill(
+                        employee_id=e_obj.id,
+                        skill_id=sk_obj.id if sk_obj else None,
+                        skill_name=sname,
+                        skill_level=slevel,
+                        confidence=sconf,
+                        source=SkillSource.RESUME if sname in ["Python", "React", "Talent Acquisition"] else SkillSource.PROFILE,
+                        last_verified=datetime.now(timezone.utc)
+                    )
+                    db.add(esk)
+        db.commit()
+
+        # 14. Training Programs Catalog
+        trainings_data = [
+            ("Docker & Containerization Accelerator", "Comprehensive hands-on workshop covering Dockerfile creation, multi-stage builds, container networks, and volume persistence.", "Docker", skill_cats["Cloud & DevOps"].id, TrainingDifficulty.INTERMEDIATE, 12.0, "DevOps Academy", 30),
+            ("Kubernetes Cloud Native Orchestration", "Master container orchestration, Pod lifecycles, Deployments, Services, and Ingress routing.", "Kubernetes", skill_cats["Cloud & DevOps"].id, TrainingDifficulty.ADVANCED, 20.0, "Cloud Native Institute", 45),
+            ("AWS Cloud Architecture & Serverless", "Deploy scalable, highly available backend architectures using AWS EC2, S3, RDS, Lambda, and IAM security.", "AWS", skill_cats["Cloud & DevOps"].id, TrainingDifficulty.INTERMEDIATE, 16.0, "AWS Certification Hub", 30),
+            ("Enterprise System Design & Distributed Systems", "Design high-throughput microservices, event-driven streaming with Kafka, caching with Redis, and database sharding.", "System Design", skill_cats["Programming & Engineering"].id, TrainingDifficulty.ADVANCED, 25.0, "Engineering Council", 60),
+            ("Generative AI, LangChain & LLM Agents", "Build production RAG pipelines, manage vector databases, and implement autonomous multi-agent systems.", "LangChain", skill_cats["AI & Data Science"].id, TrainingDifficulty.ADVANCED, 18.0, "AI Frontier Labs", 30),
+            ("Strategic Workforce Analytics & Retention", "Leverage predictive workforce modeling, retention drivers, and people analytics to optimize human capital.", "Workforce Planning", skill_cats["People & HR Strategy"].id, TrainingDifficulty.INTERMEDIATE, 10.0, "HR Executive Circle", 30),
+            ("Advanced Financial Modeling & Valuation", "Master automated financial forecast modeling, scenario stress-testing, and corporate valuation.", "Financial Modeling", skill_cats["Finance & Business Ops"].id, TrainingDifficulty.INTERMEDIATE, 14.0, "Finance Leaders Forum", 30)
+        ]
+
+        created_trainings = []
+        for t_title, t_desc, t_skill, t_cat_id, t_diff, t_hrs, t_prov, t_days in trainings_data:
+            tp = TrainingProgram(
+                title=t_title,
+                description=t_desc,
+                skill_name=t_skill,
+                skill_id=created_skills[t_skill].id if t_skill in created_skills else None,
+                category_id=t_cat_id,
+                difficulty=t_diff,
+                duration_hours=t_hrs,
+                provider=t_prov,
+                deadline_days=t_days,
+                is_active=True
+            )
+            db.add(tp)
+            db.flush()
+            created_trainings.append(tp)
+        db.commit()
+
+        # 15. Training Assignments
+        if "employee@hrms.local" in emps:
+            e_main = emps["employee@hrms.local"]
+            a1 = TrainingAssignment(
+                employee_id=e_main.id,
+                training_id=created_trainings[0].id, # Docker
+                assigned_by_id=users["hr@hrms.local"].id,
+                status=AssignmentStatus.IN_PROGRESS,
+                progress_percentage=45.0,
+                deadline=date.today() + timedelta(days=20)
+            )
+            db.add(a1)
+
+        if "john.doe@hrms.local" in emps:
+            e_john = emps["john.doe@hrms.local"]
+            a2 = TrainingAssignment(
+                employee_id=e_john.id,
+                training_id=created_trainings[0].id,
+                assigned_by_id=users["teamlead@hrms.local"].id,
+                status=AssignmentStatus.NOT_STARTED,
+                progress_percentage=0.0,
+                deadline=date.today() + timedelta(days=30)
+            )
+            db.add(a2)
+
+        if "priya.sharma@hrms.local" in emps:
+            e_priya = emps["priya.sharma@hrms.local"]
+            a3 = TrainingAssignment(
+                employee_id=e_priya.id,
+                training_id=created_trainings[4].id, # GenAI
+                assigned_by_id=users["deptmanager@hrms.local"].id,
+                status=AssignmentStatus.COMPLETED,
+                progress_percentage=100.0,
+                deadline=date.today() - timedelta(days=5),
+                completed_at=datetime.now(timezone.utc) - timedelta(days=2),
+                certificate_url="https://verify.ai-hrms.local/certificates/GENAI-2026-PS"
+            )
+            db.add(a3)
+
+        db.commit()
+
+        print("✅ Database successfully seeded with demo accounts, departments, employees, jobs, attendance, leaves, payslips, skills, and training programs!")
 
     except Exception as e:
         db.rollback()

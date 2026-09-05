@@ -258,7 +258,11 @@ def handle_ai_hr_assistant_chat(
     emp = db.query(Employee).filter(Employee.user_id == user.id).first()
 
     # Rule 1: STRICT RBAC - Prevent unauthorized data access across employees
-    if any(k in msg_lower for k in ["other employee", "colleague salary", "ceo salary", "admin password", "manager salary", "all salaries", "all employees"]):
+    if any(k in msg_lower for k in [
+        "other employee", "colleague salary", "ceo salary", "admin password", "manager salary",
+        "all salaries", "all employees", "salary of", "performance of", "performance score of",
+        "performance score and salary", "attrition of", "attrition risk of", "records of", "data of"
+    ]):
         if user.role not in [UserRole.SUPER_ADMIN, UserRole.HR_MANAGER]:
             return {
                 "reply": "🔒 **Security & Privacy Boundary**: I cannot provide personal, salary, or attendance information for other employees. As an employee, you are only authorized to query your own attendance, leave balance, payslips, and personal employment information. For cross-organization data access, please contact your HR Manager or Department Lead.",
@@ -365,6 +369,108 @@ def handle_ai_hr_assistant_chat(
             "suggested_actions": ["Apply for Leave", "Check Attendance GPS"]
         }
 
+    # Rule 6: Skills & Skill Gap Queries
+    if any(k in msg_lower for k in ["my skills", "skill gap", "skills to improve", "missing skills", "future skills"]):
+        if not emp:
+            return {"reply": "No employee profile is linked to your user account.", "is_demo_mode": True, "suggested_actions": []}
+        
+        from app.ai.skill_gap_analyzer import analyze_employee_skill_gaps
+        from app.ai.skill_predictor import predict_future_skills
+        gap_info = analyze_employee_skill_gaps(db, emp)
+        future_info = predict_future_skills(db, emp)
+
+        matched_str = ", ".join(gap_info.get("matched_skills", [])) or "None recorded"
+        missing_str = ", ".join(gap_info.get("missing_skills", [])) or "None identified"
+        future_str = ", ".join(future_info.get("predicted_skills", [])) or "General Leadership"
+
+        return {
+            "reply": (
+                f"🧠 **AI Skill & Development Profile**:\n"
+                f"- **Target Career Role**: {gap_info.get('target_role')}\n"
+                f"- **Verified Matched Skills**: {matched_str}\n"
+                f"- **Priority Skill Gaps**: {missing_str} ({gap_info.get('gap_percentage')}% gap)\n"
+                f"- **Suggested Future Skills**: {future_str}\n\n"
+                f"💡 *AI Tip*: Check out your **My AI Insights** page to enroll in recommended training programs."
+            ),
+            "is_demo_mode": settings.AI_DEMO_MODE or not settings.AI_API_KEY,
+            "suggested_actions": ["View My AI Insights", "Browse Recommended Training"]
+        }
+
+    # Rule 7: Training Recommendations Query
+    if any(k in msg_lower for k in ["recommended training", "my training", "courses for me", "what training should i take"]):
+        if not emp:
+            return {"reply": "No employee profile is linked to your user account.", "is_demo_mode": True, "suggested_actions": []}
+        
+        from app.ai.training_recommender import recommend_training_for_employee
+        recommendations = recommend_training_for_employee(db, emp)
+        top_recs = recommendations[:3]
+        rec_bullets = "\n".join([f"- **{r['training_name']}** ({r['priority']} Priority) — *{r['reason']}*" for r in top_recs]) or "No active gaps detected."
+
+        return {
+            "reply": (
+                f"🎓 **Personalized AI Training Recommendations**:\n\n"
+                f"{rec_bullets}\n\n"
+                f"You can track your enrolled courses and upload certificates in the **My Training** portal."
+            ),
+            "is_demo_mode": settings.AI_DEMO_MODE or not settings.AI_API_KEY,
+            "suggested_actions": ["Go to My Training", "View Skill Profile"]
+        }
+
+    # Rule 8: Performance Feedback & Insights Query
+    if any(k in msg_lower for k in ["my performance", "performance score", "how am i doing", "performance insight"]):
+        if not emp:
+            return {"reply": "No employee profile is linked to your user account.", "is_demo_mode": True, "suggested_actions": []}
+        
+        from app.ai.performance_predictor import predict_employee_performance
+        perf = predict_employee_performance(db, emp)
+        if not perf["is_data_sufficient"]:
+            return {
+                "reply": "📈 **Performance Insights**: Insufficient historical data available (< 14 days tenure). Complete your initial onboarding milestones to generate baseline performance trends.",
+                "is_demo_mode": True,
+                "suggested_actions": ["View Onboarding Tasks"]
+            }
+
+        pos_str = "\n".join([f"  + {f}" for f in perf["positive_factors"][:2]]) or "  + Stable baseline engagement"
+        act_str = "\n".join([f"  • {a}" for a in perf["recommended_actions"][:2]]) or "  • Maintain strong trajectory"
+
+        return {
+            "reply": (
+                f"📈 **Estimated AI Performance Snapshot**:\n"
+                f"- **Score**: {perf['score']}/100 ({perf['prediction_category']} Tier, {perf['trend']} Trend)\n"
+                f"- **Confidence**: {perf['confidence']}%\n\n"
+                f"**Key Strengths**:\n{pos_str}\n\n"
+                f"**Development Recommendations**:\n{act_str}\n\n"
+                f"*(Note: AI performance metrics are decision-support insights derived from historical attendance, training, and leave data.)*"
+            ),
+            "is_demo_mode": settings.AI_DEMO_MODE or not settings.AI_API_KEY,
+            "suggested_actions": ["View My AI Insights", "Recommended Training"]
+        }
+
+    # Rule 9: HR / Management Workforce Analytics Query (HR / Super Admin only)
+    if any(k in msg_lower for k in ["workforce analytics", "attrition risk", "department skill gaps", "workforce summary", "high risk employees"]):
+        if user.role not in [UserRole.SUPER_ADMIN, UserRole.HR_MANAGER, UserRole.DEPARTMENT_MANAGER]:
+            return {
+                "reply": "🔒 **Restricted Management Analytics**: Workforce-wide attrition risk and organizational talent intelligence are confidential to HR Leadership and Department Managers.",
+                "is_demo_mode": True,
+                "suggested_actions": ["View My AI Insights", "Check Leave Balance"]
+            }
+        
+        from app.services.workforce_intelligence_service import get_workforce_dashboard_summary
+        summary = get_workforce_dashboard_summary(db, user)
+        return {
+            "reply": (
+                f"🏢 **Executive Workforce Intelligence Overview**:\n"
+                f"- **Total Staff Headcount**: {summary['total_employees']} active employees\n"
+                f"- **Average Performance Score**: {summary['average_performance_score']}/100\n"
+                f"- **Elevated Attrition Risk Cases**: {summary['high_attrition_count']} employee(s)\n"
+                f"- **Training Completion Rate**: {summary['training_completion_rate']}%\n"
+                f"- **Top Priority Skill Gaps**: {', '.join([g['skill'] for g in summary['top_skill_gaps'][:3]]) or 'None'}\n\n"
+                f"Explore the interactive **AI Workforce Intelligence** dashboard for deep-dive heatmaps and interventions."
+            ),
+            "is_demo_mode": settings.AI_DEMO_MODE or not settings.AI_API_KEY,
+            "suggested_actions": ["Open Workforce Dashboard", "View Department Analytics"]
+        }
+
     # Default friendly HR response
     return {
         "reply": (
@@ -373,8 +479,9 @@ def handle_ai_hr_assistant_chat(
             f"- **Your Attendance**: `What is my attendance status today?`\n"
             f"- **Your Leaves**: `How many leaves do I have left?`\n"
             f"- **Your Payslip**: `Where can I download my latest payslip?`\n"
-            f"- **HR Policies**: `What is the 1-day leave auto-approval rule?`"
+            f"- **Your Skills & Training**: `What skills should I improve?` or `What training is recommended for me?`\n"
+            f"- **Your Performance**: `What are my performance insights?`"
         ),
         "is_demo_mode": settings.AI_DEMO_MODE or not settings.AI_API_KEY,
-        "suggested_actions": ["Check My Attendance", "Check My Leave Balance", "Company Policies"]
+        "suggested_actions": ["Check My Skills", "Recommended Training", "My Attendance", "Company Policies"]
     }

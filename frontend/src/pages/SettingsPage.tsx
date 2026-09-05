@@ -59,64 +59,77 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-7 max-w-4xl">
       {/* Header */}
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Office & GPS Geofence Settings</h1>
-        <p className="text-xs text-slate-500 mt-0.5">
-          Configure office GPS coordinates, maximum punch-in distance radius, and daily operating shifts.
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+            Office & GPS Geofence Settings
+          </h1>
+          <span className="ai-badge">✦ Geofence Engine</span>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+          Configure office GPS anchor coordinates, maximum punch-in distance radius, and daily operating shifts.
         </p>
       </div>
 
       {successMsg && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-2xl flex items-center gap-2 animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs rounded-2xl flex items-center gap-2.5 animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-2xl flex items-center gap-2 animate-fade-in">
-          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+        <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs rounded-2xl flex items-center gap-2.5 animate-fade-in">
+          <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      <form onSubmit={handleSave} className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-6">
+      <form
+        onSubmit={handleSave}
+        className="bg-white dark:bg-navy-900 rounded-3xl border border-slate-200/80 dark:border-navy-800 p-6 sm:p-8 shadow-apple space-y-7 transition-all"
+      >
         {/* GPS Geofence Section */}
         <div>
-          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
-            <MapPin className="w-5 h-5 text-indigo-600" />
-            <h3 className="text-sm font-bold text-slate-900">GPS Geofence Parameters</h3>
+          <div className="flex items-center gap-3 mb-5 pb-4 border-b border-slate-100 dark:border-navy-800">
+            <div className="p-2.5 rounded-xl bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-cyan-400 border border-brand-100 dark:border-brand-800/60">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">GPS Geofence Parameters</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Anchor coordinates for Haversine distance verification</p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Office Latitude</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Office Latitude</label>
               <input
                 type="number"
                 step="any"
                 value={latitude}
                 onChange={(e) => setLatitude(Number(e.target.value))}
                 required
-                className="w-full text-xs px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full text-xs px-3.5 py-2.5 bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-700 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Office Longitude</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Office Longitude</label>
               <input
                 type="number"
                 step="any"
                 value={longitude}
                 onChange={(e) => setLongitude(Number(e.target.value))}
                 required
-                className="w-full text-xs px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full text-xs px-3.5 py-2.5 bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-700 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
           </div>
 
           <div className="mt-4">
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
               Geofence Radius Limit (Meters)
             </label>
             <input
@@ -126,58 +139,63 @@ export const SettingsPage: React.FC = () => {
               value={geofenceRadius}
               onChange={(e) => setGeofenceRadius(Number(e.target.value))}
               required
-              className="w-full text-xs px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full text-xs px-3.5 py-2.5 bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-700 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
             />
-            <p className="text-[11px] text-slate-400 mt-1">
-              Standard requirement: 100 meters. Punches &gt; 100m will be rejected and flagged in audit trail.
+            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+              Standard requirement: 100 meters. Check-ins &gt; 100m will be recorded with distance warnings and flagged in the audit trail.
             </p>
           </div>
 
           <div className="mt-4">
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Office Address</label>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Office Address</label>
             <input
               type="text"
               value={officeAddress}
               onChange={(e) => setOfficeAddress(e.target.value)}
-              className="w-full text-xs px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              className="w-full text-xs px-3.5 py-2.5 bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-700 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
             />
           </div>
         </div>
 
         {/* Operating Hours Section */}
         <div>
-          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
-            <Shield className="w-5 h-5 text-indigo-600" />
-            <h3 className="text-sm font-bold text-slate-900">Standard Operating Shift</h3>
+          <div className="flex items-center gap-3 mb-5 pb-4 border-b border-slate-100 dark:border-navy-800">
+            <div className="p-2.5 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-100 dark:border-purple-800/60">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Standard Shift Hours</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Regular working hours for attendance tracking</p>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Work Shift Start</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Work Shift Start</label>
               <input
                 type="time"
                 value={workStartTime}
                 onChange={(e) => setWorkStartTime(e.target.value)}
-                className="w-full text-xs px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full text-xs px-3.5 py-2.5 bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-700 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Work Shift End</label>
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Work Shift End</label>
               <input
                 type="time"
                 value={workEndTime}
                 onChange={(e) => setWorkEndTime(e.target.value)}
-                className="w-full text-xs px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                className="w-full text-xs px-3.5 py-2.5 bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-700 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
               />
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end pt-3 border-t border-slate-100">
+        <div className="flex justify-end pt-3 border-t border-slate-100 dark:border-navy-800">
           <button
             type="submit"
             disabled={isSaving}
-            className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/20 transition-all flex items-center gap-1.5"
+            className="px-6 py-2.5 bg-gradient-to-r from-brand-600 to-cyan-600 hover:from-brand-700 hover:to-cyan-700 disabled:opacity-50 text-white rounded-2xl text-xs font-bold shadow-apple-md transition-all flex items-center gap-2 hover:scale-[1.01] active:scale-[0.99]"
           >
             <Save className="w-4 h-4" />
             <span>{isSaving ? 'Saving...' : 'Save Configuration'}</span>

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
 
 interface ModalProps {
   isOpen: boolean;
@@ -7,7 +7,8 @@ interface ModalProps {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
+  isAiModal?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -17,6 +18,7 @@ export const Modal: React.FC<ModalProps> = ({
   subtitle,
   children,
   maxWidth = 'lg',
+  isAiModal = false,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -40,40 +42,53 @@ export const Modal: React.FC<ModalProps> = ({
     lg: 'max-w-lg',
     xl: 'max-w-xl',
     '2xl': 'max-w-2xl',
+    '3xl': 'max-w-3xl',
     '4xl': 'max-w-4xl',
+    '5xl': 'max-w-5xl',
   };
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity animate-fade-in"
+        className="fixed inset-0 bg-slate-900/60 dark:bg-navy-950/80 backdrop-blur-md transition-opacity animate-fade-in"
         onClick={onClose}
       />
 
       {/* Dialog */}
       <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
         <div
-          className={`relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl transition-all sm:my-8 w-full ${maxWidthMap[maxWidth]} border border-slate-100`}
+          className={`relative transform overflow-hidden rounded-2xl bg-white dark:bg-navy-900 text-left shadow-2xl transition-all sm:my-8 w-full ${maxWidthMap[maxWidth]} border border-slate-200/80 dark:border-navy-800 animate-scale-up`}
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div className="flex items-center justify-between border-b border-slate-100 dark:border-navy-800 px-6 py-4">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">{title}</h3>
-              {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+              <div className="flex items-center gap-2">
+                {isAiModal && (
+                  <span className="ai-badge text-[10px]">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    AI Intelligence
+                  </span>
+                )}
+                <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">{title}</h3>
+              </div>
+              {subtitle && (
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{subtitle}</p>
+              )}
             </div>
             <button
               onClick={onClose}
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+              className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-navy-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Body */}
-          <div className="px-6 py-5 max-h-[80vh] overflow-y-auto">{children}</div>
+          <div className="px-6 py-5 max-h-[82vh] overflow-y-auto">{children}</div>
         </div>
       </div>
     </div>
   );
 };
+

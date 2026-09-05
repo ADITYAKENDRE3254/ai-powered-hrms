@@ -274,3 +274,230 @@ export interface AIChatMessage {
   suggested_actions?: string[];
   is_demo_mode?: boolean;
 }
+
+// ==========================================
+// Workforce Intelligence & Training Types
+// ==========================================
+
+export type SkillLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED' | 'EXPERT';
+export type SkillSource = 'RESUME' | 'PROFILE' | 'MANAGER_ASSESSED' | 'CERTIFICATION' | 'TRAINING';
+export type PerformanceCategory = 'HIGH' | 'MEDIUM' | 'NEEDS_ATTENTION' | 'INSUFFICIENT_DATA';
+export type PerformanceTrend = 'IMPROVING' | 'STABLE' | 'DECLINING' | 'INSUFFICIENT_DATA';
+export type AttritionRiskLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'INSUFFICIENT_DATA';
+export type GapPriority = 'HIGH' | 'MEDIUM' | 'LOW';
+export type TrainingDifficulty = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+export type AssignmentStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'OVERDUE';
+export type RecommendationPriority = 'HIGH' | 'MEDIUM' | 'LOW';
+
+export interface SkillCategory {
+  id: number;
+  name: string;
+  description?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface Skill {
+  id: number;
+  name: string;
+  category_id?: number;
+  description?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface EmployeeSkill {
+  id: number;
+  employee_id: number;
+  skill_id?: number;
+  skill_name: string;
+  skill_level: SkillLevel;
+  confidence: number;
+  source: SkillSource;
+  last_verified: string;
+  created_at: string;
+}
+
+export interface PerformancePrediction {
+  id?: number;
+  employee_id: number;
+  employee_name?: string;
+  department_name?: string;
+  designation?: string;
+  period: string;
+  score: number;
+  prediction_category: PerformanceCategory;
+  confidence: number;
+  trend: PerformanceTrend;
+  positive_factors: string[];
+  attention_factors: string[];
+  recommended_actions: string[];
+  model_version: string;
+  is_data_sufficient: boolean;
+  explanation?: string;
+  prediction_date?: string;
+}
+
+export interface AttritionPrediction {
+  id?: number;
+  employee_id: number;
+  employee_name?: string;
+  department_name?: string;
+  designation?: string;
+  period: string;
+  risk_score: number;
+  risk_level: AttritionRiskLevel;
+  confidence: number;
+  main_factors: string[];
+  protective_factors: string[];
+  recommended_interventions: string[];
+  model_version: string;
+  is_data_sufficient: boolean;
+  explanation?: string;
+  prediction_date?: string;
+}
+
+export interface SkillGap {
+  id?: number;
+  employee_id: number;
+  employee_name?: string;
+  target_role: string;
+  required_skills: string[];
+  matched_skills: string[];
+  missing_skills: string[];
+  gap_percentage: number;
+  priority: GapPriority;
+  confidence: number;
+  analysis_date?: string;
+}
+
+export interface FutureSkill {
+  id?: number;
+  employee_id: number;
+  employee_name?: string;
+  predicted_skills: string[];
+  career_path?: string;
+  relevance_score: number;
+  reason: string;
+  confidence: number;
+}
+
+export interface TrainingProgram {
+  id: number;
+  title: string;
+  description: string;
+  skill_name: string;
+  skill_id?: number;
+  category_id?: number;
+  difficulty: TrainingDifficulty;
+  duration_hours: number;
+  provider: string;
+  deadline_days: number;
+  is_active: boolean;
+  enrolled_count?: number;
+  completed_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TrainingAssignment {
+  id: number;
+  employee_id: number;
+  employee_name?: string;
+  department_name?: string;
+  training_id: number;
+  training_title?: string;
+  skill_name?: string;
+  difficulty?: TrainingDifficulty;
+  duration_hours?: number;
+  provider?: string;
+  status: AssignmentStatus;
+  progress_percentage: number;
+  deadline?: string;
+  certificate_url?: string;
+  completed_at?: string;
+  created_at: string;
+}
+
+export interface TrainingRecommendation {
+  id?: number;
+  employee_id: number;
+  training_id?: number;
+  training_name: string;
+  skill_name: string;
+  priority: RecommendationPriority;
+  reason: string;
+  expected_benefit: string;
+  confidence: number;
+}
+
+export interface EmployeeAIInsights {
+  employee_id: number;
+  employee_name: string;
+  designation: string;
+  department_name?: string;
+  performance: PerformancePrediction;
+  skills: EmployeeSkill[];
+  skill_gaps: SkillGap;
+  future_skills: FutureSkill;
+  recommended_trainings: TrainingRecommendation[];
+}
+
+export interface WorkforceDashboardSummary {
+  total_employees: number;
+  analyzed_employees: number;
+  performance_distribution: Record<string, number>;
+  attrition_risk_distribution: Record<string, number>;
+  average_performance_score: number;
+  average_attrition_risk: number;
+  high_attrition_count: number;
+  needs_attention_count: number;
+  total_skills_tracked: number;
+  total_training_programs: number;
+  completed_trainings_count: number;
+  training_completion_rate: number;
+  department_analytics: Array<{
+    department_id: number;
+    department_name: string;
+    headcount: number;
+    average_performance: number;
+    high_attrition_count: number;
+    top_missing_skills: string[];
+  }>;
+  top_skill_gaps: Array<{
+    skill: string;
+    affected_employees: number;
+  }>;
+  top_recommended_trainings: Array<{
+    training_name: string;
+    demand_count: number;
+  }>;
+  latest_analysis_run?: {
+    id: number;
+    run_type: string;
+    duration_seconds: number;
+    created_at: string;
+  } | null;
+}
+
+export interface DepartmentWorkforceAnalytics {
+  department_id: number;
+  department_name: string;
+  headcount: number;
+  average_performance: number;
+  performance_tier_breakdown: Record<string, number>;
+  attrition_risk_breakdown: Record<string, number>;
+  top_missing_skills: string[];
+  top_department_trainings: string[];
+  employees: Array<{
+    id: number;
+    name: string;
+    designation: string;
+    performance_score: number;
+    performance_category: string;
+    attrition_risk_level: string;
+    attrition_risk_score: number;
+    skill_gap_percentage: number;
+  }>;
+}
+
