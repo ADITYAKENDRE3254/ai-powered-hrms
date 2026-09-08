@@ -7,8 +7,10 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
 
-    # Database
-    DATABASE_URL: str = "sqlite:///./hrms.db"
+    # Database - Default to PostgreSQL (production), fallback to SQLite (dev)
+    # For PostgreSQL: postgresql://user:password@localhost:5432/ai_hrms_db
+    # For SQLite: sqlite:///./hrms.db
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/ai_hrms_db"
 
     # JWT
     JWT_SECRET_KEY: str = "super_secret_jwt_key_ai_hrms_2026_production_grade_token_signature_99182"

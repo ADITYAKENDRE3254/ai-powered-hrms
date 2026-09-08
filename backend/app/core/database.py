@@ -1,16 +1,31 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.pool import QueuePool
 from app.core.config import settings
 
-# Configure SQLite or PostgreSQL connect args
+# Configure database connection based on URL
 connect_args = {}
+pool_config = {}
+
 if settings.DATABASE_URL.startswith("sqlite"):
+    # SQLite: no threading concerns in dev
     connect_args = {"check_same_thread": False}
+    pool_config = {"poolclass": None}  # Single-threaded, no pooling
+else:
+    # PostgreSQL: production-grade connection pooling
+    connect_args = {"connect_timeout": 10}
+    pool_config = {
+        "poolclass": QueuePool,
+        "pool_size": 10,
+        "max_overflow": 20,
+        "pool_recycle": 3600,  # Recycle connections after 1 hour
+        "pool_pre_ping": True,  # Verify connection before using
+    }
 
 engine = create_engine(
     settings.DATABASE_URL,
     connect_args=connect_args,
-    pool_pre_ping=True
+    **pool_config
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

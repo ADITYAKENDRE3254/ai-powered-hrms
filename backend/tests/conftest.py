@@ -15,9 +15,27 @@ from app.models.payroll import Payroll, PayrollItem, PayrollStatus
 from app.models.recruitment import Job, Candidate, JobStatus, CandidateStatus
 from datetime import date, datetime, timezone
 
-SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///./test_hrms.db"
+# Use PostgreSQL for tests (or SQLite if PG not available)
+SQLALCHEMY_TEST_DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/ai_hrms_test"
+# Fallback to SQLite if PostgreSQL is unavailable
+try:
+    engine = create_engine(
+        SQLALCHEMY_TEST_DATABASE_URL,
+        connect_args={"connect_timeout": 2},
+        echo=False
+    )
+    # Test connection
+    with engine.connect() as conn:
+        pass
+except Exception:
+    # Fallback to SQLite
+    SQLALCHEMY_TEST_DATABASE_URL = "sqlite:///./test_hrms.db"
+    engine = create_engine(
+        SQLALCHEMY_TEST_DATABASE_URL,
+        connect_args={"check_same_thread": False},
+        echo=False
+    )
 
-engine = create_engine(SQLALCHEMY_TEST_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 @pytest.fixture(scope="session", autouse=True)

@@ -175,7 +175,7 @@ def test_payroll_calculation_with_lwp(db, seed_test_data):
     emp = seed_test_data["emp"]  # Monthly salary: 66,000, Allowances: 4,000, PF: 12%, Tax: 10%
     working_days = 22
 
-    # Monthly salary 66,000 / 22 working days = $3,000 per-day rate
+    # Monthly salary 66,000 / 22 working days = 3,000 per-day rate
     # Zero attendance records created in DB for next month -> 0 present days -> 22 LWP days
     calc = calculate_employee_payroll(
         db=db,
@@ -259,7 +259,7 @@ def test_ai_resume_parser_and_matching():
     match_res = match_candidate_to_job(
         candidate_skills=parsed["skills"],
         candidate_exp=parsed["experience_years"],
-        job_required_skills_str='["Python", "FastAPI", "SQL", "PostgreSQL", "Kubernetes"]',
+        job_required_skills_str='{"skills": ["Python", "FastAPI", "SQL", "PostgreSQL", "Kubernetes"]}',
         job_required_exp=3.0,
         job_title="Senior Backend Engineer"
     )
