@@ -8,6 +8,7 @@ import { Sidebar } from './components/common/Sidebar';
 import { Header } from './components/common/Header';
 import { CommandPalette } from './components/common/CommandPalette';
 import { AIHRAssistantDrawer } from './components/ai/AIHRAssistantDrawer';
+import { Analytics } from '@vercel/analytics/react';
 
 // Lazy-Loaded Page Components for Optimized Route Code-Splitting
 const Login = lazy(() => import('./pages/auth/Login').then(m => ({ default: m.Login })));
@@ -432,6 +433,7 @@ export const App: React.FC = () => {
           </Routes>
         </Suspense>
       </BrowserRouter>
+      <Analytics />
     </NotificationProvider>
     </AuthProvider>
   </ThemeProvider>
