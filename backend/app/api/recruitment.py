@@ -10,8 +10,10 @@ from app.core.deps import get_current_user, require_roles
 from app.models.user import User, UserRole
 from app.models.department import Department
 from app.models.recruitment import Job, Candidate, JobStatus, CandidateStatus
+from app.models.notification import Notification, NotificationType
 from app.schemas.recruitment import JobCreate, JobUpdate, JobOut, CandidateCreate, CandidateUpdate, CandidateOut, CandidateStatusUpdate
 from app.services.audit_service import log_audit
+from app.services.email_service import send_candidate_status_email
 
 router = APIRouter(prefix="/recruitment", tags=["Recruitment"])
 
@@ -206,14 +208,47 @@ def update_candidate_status(
     current_user: User = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.HR_MANAGER, UserRole.RECRUITER)),
     db: Session = Depends(get_db)
 ):
-    """Shortlists, selects, or rejects a candidate"""
+    """Shortlists, selects, or rejects a candidate, and auto-dispatches an email notification"""
     candidate = db.query(Candidate).filter(Candidate.id == id).first()
     if not candidate:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate not found")
 
+    old_status = candidate.status
     candidate.status = status_in.status
     db.commit()
     db.refresh(candidate)
+
+    # 1. Fetch job title and department name
+    job_title = candidate.job.title if candidate.job else "Applied Position"
+    department_name = (candidate.job.department.name if candidate.job and candidate.job.department else candidate.suggested_department) or "General"
+
+    # 2. Automated Email Notification to Candidate
+    email_sent = False
+    try:
+        email_sent = send_candidate_status_email(
+            candidate=candidate,
+            job_title=job_title,
+            department_name=department_name,
+            new_status_value=status_in.status.value
+        )
+    except Exception as e:
+        print(f"Warning: Failed to dispatch candidate status email: {e}")
+
+    # 3. Create In-App Notification if candidate has a linked user account
+    if candidate.user_id:
+        try:
+            status_title = f"Application Status: {status_in.status.value.replace('_', ' ').title()}"
+            status_msg = f"Your application for {job_title} ({department_name}) has been updated to {status_in.status.value}."
+            notif = Notification(
+                user_id=candidate.user_id,
+                title=status_title,
+                message=status_msg,
+                type=NotificationType.RECRUITMENT
+            )
+            db.add(notif)
+            db.commit()
+        except Exception as e:
+            print(f"Warning: In-app notification creation failed: {e}")
 
     log_audit(
         db=db,
@@ -221,7 +256,13 @@ def update_candidate_status(
         module="RECRUITMENT",
         user=current_user,
         record_id=str(candidate.id),
-        details={"new_status": status_in.status.value, "candidate_name": f"{candidate.first_name} {candidate.last_name}"},
+        details={
+            "old_status": old_status.value if old_status else None,
+            "new_status": status_in.status.value,
+            "candidate_name": f"{candidate.first_name} {candidate.last_name}",
+            "candidate_email": candidate.email,
+            "email_notified": email_sent
+        },
         ip_address=request.client.host if request.client else None
     )
 

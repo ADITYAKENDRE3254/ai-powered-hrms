@@ -1,5 +1,6 @@
 import io
 import os
+import json
 import pytest
 from app.core.security import create_access_token
 from app.models.user import User, UserRole
@@ -190,3 +191,103 @@ class TestRecruitmentOriginalResume:
         emp_headers = auth_header(emp_user.id, "EMPLOYEE")
         res3 = client.get(f"/api/recruitment/candidates/{cand.id}/resume", headers=emp_headers)
         assert res3.status_code == 403
+
+    def test_candidate_status_selected_triggers_email_and_notification(self, client, seed_test_data, db):
+        hr_user = seed_test_data["hr_user"]
+        headers = auth_header(hr_user.id, "HR_MANAGER")
+
+        # Create candidate with user_id
+        cand_user = User(
+            email="selected.candidate@example.com",
+            hashed_password="hash",
+            role=UserRole.CANDIDATE,
+            is_active=True
+        )
+        db.add(cand_user)
+        db.commit()
+        db.refresh(cand_user)
+
+        job = db.query(Job).first()
+        cand = Candidate(
+            job_id=job.id if job else 1,
+            user_id=cand_user.id,
+            first_name="Selected",
+            last_name="Applicant",
+            email=cand_user.email,
+            status=CandidateStatus.INTERVIEW,
+            match_score=94.5
+        )
+        db.add(cand)
+        db.commit()
+        db.refresh(cand)
+
+        # Update status to SELECTED
+        res = client.put(
+            f"/api/recruitment/candidates/{cand.id}/status",
+            json={"status": "SELECTED"},
+            headers=headers
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "SELECTED"
+
+        # Verify candidate updated in DB
+        db.refresh(cand)
+        assert cand.status == CandidateStatus.SELECTED
+
+        # Verify in-app Notification was created
+        from app.models.notification import Notification, NotificationType
+        notif = db.query(Notification).filter(
+            Notification.user_id == cand_user.id,
+            Notification.type == NotificationType.RECRUITMENT
+        ).first()
+        assert notif is not None
+        assert "Selected" in notif.title or "SELECTED" in notif.message
+
+        # Verify Audit Log
+        audit = db.query(AuditLog).filter(
+            AuditLog.action == "CANDIDATE_STATUS_UPDATED",
+            AuditLog.record_id == str(cand.id)
+        ).first()
+        assert audit is not None
+        details = json.loads(audit.details) if audit.details else {}
+        assert details.get("new_status") == "SELECTED"
+        assert details.get("email_notified") is True
+
+    def test_candidate_status_rejected_triggers_email(self, client, seed_test_data, db):
+        hr_user = seed_test_data["hr_user"]
+        headers = auth_header(hr_user.id, "HR_MANAGER")
+
+        job = db.query(Job).first()
+        cand = Candidate(
+            job_id=job.id if job else 1,
+            first_name="External",
+            last_name="Candidate",
+            email="rejected.applicant@example.com",
+            status=CandidateStatus.APPLIED,
+            match_score=42.0
+        )
+        db.add(cand)
+        db.commit()
+        db.refresh(cand)
+
+        # Update status to REJECTED
+        res = client.put(
+            f"/api/recruitment/candidates/{cand.id}/status",
+            json={"status": "REJECTED"},
+            headers=headers
+        )
+        assert res.status_code == 200
+        data = res.json()
+        assert data["status"] == "REJECTED"
+
+        # Verify Audit Log
+        audit = db.query(AuditLog).filter(
+            AuditLog.action == "CANDIDATE_STATUS_UPDATED",
+            AuditLog.record_id == str(cand.id)
+        ).first()
+        assert audit is not None
+        details = json.loads(audit.details) if audit.details else {}
+        assert details.get("new_status") == "REJECTED"
+        assert details.get("email_notified") is True
+

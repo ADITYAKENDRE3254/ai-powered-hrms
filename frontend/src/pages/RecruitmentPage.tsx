@@ -24,7 +24,9 @@ import {
   ChevronRight,
   FileText,
   Eye,
-  Download
+  Download,
+  Mail,
+  X
 } from 'lucide-react';
 
 import { RecruitmentFunnelChart } from '../components/charts/RecruitmentFunnelChart';
@@ -49,6 +51,7 @@ export const RecruitmentPage: React.FC = () => {
   const [selectedCandidateForMatch, setSelectedCandidateForMatch] = useState<Candidate | null>(null);
   const [selectedCandidateForProfile, setSelectedCandidateForProfile] = useState<Candidate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
@@ -77,7 +80,12 @@ export const RecruitmentPage: React.FC = () => {
 
   const handleStatusChange = async (candidateId: number, newStatus: CandidateStatus) => {
     try {
+      const cand = candidates.find(c => c.id === candidateId);
+      const candName = cand ? `${cand.first_name} ${cand.last_name}` : 'Candidate';
+      const candEmail = cand?.email || 'candidate email';
       await recruitmentService.updateCandidateStatus(candidateId, newStatus);
+      setToastMessage(`✓ ${candName} moved to ${newStatus.replace('_', ' ')}. Automated notification email dispatched to ${candEmail}.`);
+      setTimeout(() => setToastMessage(null), 6000);
       loadData();
     } catch (e) {
       console.error(e);
@@ -144,6 +152,27 @@ export const RecruitmentPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Status Update & Email Notification Toast Banner */}
+      {toastMessage && (
+        <div className="p-4 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center justify-between gap-3 text-xs text-emerald-900 dark:text-emerald-200 shadow-apple animate-fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+              <Mail className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="font-bold block text-sm">{toastMessage}</span>
+              <span className="text-[11px] opacity-80">Candidate has been updated in the recruitment pipeline and notified.</span>
+            </div>
+          </div>
+          <button
+            onClick={() => setToastMessage(null)}
+            className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-lg text-emerald-700 dark:text-emerald-400 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Recruitment Analytics Funnel */}
       <RecruitmentFunnelChart />

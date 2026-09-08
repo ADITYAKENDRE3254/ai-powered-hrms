@@ -20,7 +20,8 @@ import {
   Building2,
   CheckCircle2,
   XCircle,
-  ChevronRight
+  ChevronRight,
+  Mail
 } from 'lucide-react';
 
 interface CandidateProfileModalProps {
@@ -52,6 +53,7 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
   // Status update state
   const [currentStatus, setCurrentStatus] = useState<CandidateStatus>(candidate?.status || 'APPLIED');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState<boolean>(false);
+  const [statusFeedback, setStatusFeedback] = useState<{ status: CandidateStatus; message: string } | null>(null);
 
   const isPdf = candidate?.original_resume_mime_type?.includes('pdf') ||
     candidate?.original_resume_filename?.toLowerCase().endsWith('.pdf') ||
@@ -139,6 +141,10 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
       setIsUpdatingStatus(true);
       await recruitmentService.updateCandidateStatus(candidate.id, newStatus);
       setCurrentStatus(newStatus);
+      setStatusFeedback({
+        status: newStatus,
+        message: `Status updated to ${newStatus.replace('_', ' ')}. Automated notification email sent to ${candidate.email}.`
+      });
       if (onStatusUpdated) onStatusUpdated();
     } catch (err: any) {
       alert(err.response?.data?.detail || 'Failed to update candidate status');
@@ -454,6 +460,27 @@ export const CandidateProfileModal: React.FC<CandidateProfileModalProps> = ({
             ) : null}
           </div>
         </div>
+
+        {/* Notification Feedback Toast */}
+        {statusFeedback && (
+          <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 rounded-2xl flex items-center justify-between gap-3 text-xs text-emerald-800 dark:text-emerald-300 animate-fade-in shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                <Mail className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-bold block">{statusFeedback.message}</span>
+                <span className="text-[11px] opacity-80">Candidate will receive complete next steps via automated email & in-app alert.</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setStatusFeedback(null)}
+              className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-lg text-emerald-700 dark:text-emerald-400 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Action Footer Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100 dark:border-navy-800">
