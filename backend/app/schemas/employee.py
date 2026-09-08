@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional
 from datetime import date, datetime
 from app.models.employee import EmploymentStatus, Gender
@@ -63,8 +63,7 @@ class EmployeeOut(EmployeeBase):
     team_leader_name: Optional[str] = None
     user_role: Optional[str] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class EmployeeListOut(BaseModel):
     total: int

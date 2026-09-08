@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from app.models.payroll import PayrollStatus
@@ -35,8 +35,7 @@ class PayrollItemOut(BaseModel):
     payslip_url: Optional[str] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class PayrollOut(BaseModel):
     id: int
@@ -52,5 +51,4 @@ class PayrollOut(BaseModel):
     total_net_disbursed: Optional[float] = 0.0
     items: List[PayrollItemOut] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

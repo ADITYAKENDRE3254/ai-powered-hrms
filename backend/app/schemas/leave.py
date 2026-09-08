@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional
 from datetime import date, datetime
 from app.models.leave import LeaveType, LeaveStatus
@@ -31,8 +31,7 @@ class LeaveOut(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class LeaveBalanceOut(BaseModel):
     casual_leave: float
@@ -40,5 +39,4 @@ class LeaveBalanceOut(BaseModel):
     earned_leave: float
     year: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

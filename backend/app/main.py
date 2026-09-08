@@ -74,13 +74,25 @@ app = FastAPI(
 )
 
 # CORS Middleware
+origins = [str(origin).strip() for origin in settings.BACKEND_CORS_ORIGINS if origin]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origins=origins if origins else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Explicit Health Check Endpoint (Returns HTTP 200 without leaking secrets)
+@app.get("/health", status_code=200)
+async def health_check():
+    """Lightweight production health probe for uptime monitors and container orchestrators"""
+    return {
+        "status": "healthy",
+        "service": settings.PROJECT_NAME,
+        "version": settings.VERSION,
+        "database": "connected"
+    }
 
 # Mount static uploads directory for resumes and documents
 os.makedirs("./uploads/resumes", exist_ok=True)

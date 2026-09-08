@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
@@ -39,8 +39,7 @@ class TeamOut(TeamBase):
     department_name: Optional[str] = None
     member_count: Optional[int] = 0
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DepartmentOut(DepartmentBase):
     id: int
@@ -49,5 +48,4 @@ class DepartmentOut(DepartmentBase):
     employee_count: Optional[int] = 0
     teams: List[TeamOut] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
