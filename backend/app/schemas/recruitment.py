@@ -65,6 +65,10 @@ class CandidateOut(CandidateBase):
     user_id: Optional[int] = None
     job_title: Optional[str] = None
     resume_url: Optional[str] = None
+    original_resume_filename: Optional[str] = None
+    original_resume_mime_type: Optional[str] = None
+    original_resume_size: Optional[int] = None
+    uploaded_at: Optional[datetime] = None
     extracted_skills: Optional[str] = None
     experience_years: float = 0.0
     education: Optional[str] = None

@@ -175,6 +175,10 @@ export interface Candidate {
   email: string;
   phone?: string;
   resume_url?: string;
+  original_resume_filename?: string;
+  original_resume_mime_type?: string;
+  original_resume_size?: number;
+  uploaded_at?: string;
   extracted_skills?: string;
   experience_years: number;
   education?: string;

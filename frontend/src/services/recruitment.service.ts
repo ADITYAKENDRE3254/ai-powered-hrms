@@ -49,5 +49,35 @@ export const recruitmentService = {
       },
     });
     return response.data;
+  },
+
+  getResumeUrl(candidateId: number, download = false): string {
+    return `/api/recruitment/candidates/${candidateId}/resume${download ? '?download=true' : ''}`;
+  },
+
+  async getResumeBlobUrl(candidateId: number): Promise<string> {
+    const response = await api.get(`/recruitment/candidates/${candidateId}/resume`, {
+      responseType: 'blob',
+    });
+    return URL.createObjectURL(response.data);
+  },
+
+  async downloadResume(candidateId: number, filename?: string): Promise<void> {
+    const response = await api.get(`/recruitment/candidates/${candidateId}/resume?download=true`, {
+      responseType: 'blob',
+    });
+    const headerType = response.headers ? response.headers['content-type'] : undefined;
+    const mediaType = typeof headerType === 'string' ? headerType : 'application/octet-stream';
+    const blob = new Blob([response.data], {
+      type: mediaType,
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename || `candidate_${candidateId}_resume.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 };

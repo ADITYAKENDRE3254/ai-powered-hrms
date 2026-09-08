@@ -49,6 +49,12 @@ class Candidate(Base):
     phone = Column(String(30), nullable=True)
     
     resume_url = Column(String(255), nullable=True)
+    original_resume_filename = Column(String(255), nullable=True)
+    original_resume_storage_path = Column(String(500), nullable=True)
+    original_resume_mime_type = Column(String(100), nullable=True)
+    original_resume_size = Column(Integer, nullable=True)
+    uploaded_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=True)
+
     extracted_skills = Column(Text, nullable=True)  # JSON array string
     experience_years = Column(Float, default=0.0, nullable=False)
     education = Column(String(255), nullable=True)

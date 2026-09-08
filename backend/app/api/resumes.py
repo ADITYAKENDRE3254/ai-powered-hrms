@@ -1,6 +1,7 @@
 import os
 import uuid
 import json
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
@@ -96,6 +97,20 @@ async def upload_and_scan_resume(
         if not job:
             job = db.query(Job).first()
 
+    # Determine MIME type
+    content_type = file.content_type
+    if not content_type or content_type == "application/octet-stream":
+        if ext == ".pdf":
+            content_type = "application/pdf"
+        elif ext == ".docx":
+            content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        elif ext == ".doc":
+            content_type = "application/msword"
+        else:
+            content_type = "application/octet-stream"
+
+    file_size = len(contents)
+
     candidate = Candidate(
         job_id=job.id if job else 1,
         user_id=current_user.id if current_user and current_user.role == UserRole.CANDIDATE else None,
@@ -104,6 +119,11 @@ async def upload_and_scan_resume(
         email=final_email,
         phone=final_phone,
         resume_url=f"/uploads/resumes/{safe_filename}",
+        original_resume_filename=os.path.basename(filename),
+        original_resume_storage_path=save_path,
+        original_resume_mime_type=content_type,
+        original_resume_size=file_size,
+        uploaded_at=datetime.now(timezone.utc),
         extracted_skills=json.dumps(parsed["skills"]),
         experience_years=parsed["experience_years"],
         education=parsed["education"],
@@ -125,7 +145,13 @@ async def upload_and_scan_resume(
         module="RECRUITMENT",
         user=current_user,
         record_id=str(candidate.id),
-        details={"candidate_name": f"{final_first} {final_last}", "match_score": match_score, "suggested_department": parsed["suggested_department"]},
+        details={
+            "candidate_name": f"{final_first} {final_last}",
+            "filename": os.path.basename(filename),
+            "file_size": file_size,
+            "match_score": match_score,
+            "suggested_department": parsed["suggested_department"]
+        },
         ip_address=request.client.host if request.client else None
     )
 
@@ -143,6 +169,10 @@ async def upload_and_scan_resume(
         "matching_skills": matching_skills,
         "missing_skills": missing_skills,
         "resume_url": candidate.resume_url,
+        "original_resume_filename": candidate.original_resume_filename,
+        "original_resume_mime_type": candidate.original_resume_mime_type,
+        "original_resume_size": candidate.original_resume_size,
+        "uploaded_at": candidate.uploaded_at.isoformat() if candidate.uploaded_at else None,
         "status": candidate.status.value,
         "is_demo_mode": parsed["is_demo_mode"]
     }

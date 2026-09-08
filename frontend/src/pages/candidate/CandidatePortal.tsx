@@ -5,13 +5,15 @@ import { Badge } from '../../components/common/Badge';
 import { EmptyState } from '../../components/common/EmptyState';
 import { CardSkeleton } from '../../components/common/LoadingSkeleton';
 import { ResumeUploadModal } from '../../components/recruitment/ResumeUploadModal';
-import { Briefcase, MapPin, DollarSign, UploadCloud, CheckCircle2, Search, Sparkles } from 'lucide-react';
+import { CandidateProfileModal } from '../../components/recruitment/CandidateProfileModal';
+import { Briefcase, MapPin, DollarSign, UploadCloud, CheckCircle2, Search, Sparkles, FileText, Download, Eye } from 'lucide-react';
 
 export const CandidatePortal: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [myApplications, setMyApplications] = useState<Candidate[]>([]);
   const [search, setSearch] = useState('');
   const [selectedJobForApply, setSelectedJobForApply] = useState<Job | null>(null);
+  const [selectedAppForProfile, setSelectedAppForProfile] = useState<Candidate | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -83,23 +85,40 @@ export const CandidatePortal: React.FC = () => {
             {myApplications.map((app) => (
               <div
                 key={app.id}
-                className="p-4 rounded-xl border border-slate-200/80 dark:border-navy-800 bg-slate-50/60 dark:bg-navy-950/50 flex items-center justify-between shadow-2xs"
+                className="p-4 rounded-xl border border-slate-200/80 dark:border-navy-800 bg-slate-50/60 dark:bg-navy-950/50 flex flex-col justify-between gap-3 shadow-2xs"
               >
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                    {app.job_title || 'Position Application'}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Applied: {new Date(app.created_at).toLocaleDateString()}
-                  </p>
-                  {app.match_score > 0 && (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-                      <Sparkles className="w-3 h-3" />
-                      AI Match: {app.match_score}%
-                    </span>
-                  )}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                      {app.job_title || 'Position Application'}
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Applied: {new Date(app.created_at).toLocaleDateString()}
+                    </p>
+                    {app.match_score > 0 && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+                        <Sparkles className="w-3 h-3" />
+                        AI Match: {app.match_score}%
+                      </span>
+                    )}
+                  </div>
+                  <Badge status={app.status} showDot />
                 </div>
-                <Badge status={app.status} showDot />
+
+                <div className="pt-2.5 border-t border-slate-200/60 dark:border-navy-800 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                    <FileText className="w-3 h-3 text-brand-600 dark:text-cyan-400" />
+                    <span>{app.original_resume_filename || 'Original Resume'}</span>
+                  </span>
+
+                  <button
+                    onClick={() => setSelectedAppForProfile(app)}
+                    className="px-3 py-1 bg-brand-50 hover:bg-brand-100 dark:bg-brand-950/40 text-brand-700 dark:text-cyan-400 rounded-lg text-xs font-bold border border-brand-200 dark:border-brand-800/60 flex items-center gap-1 transition-colors"
+                  >
+                    <Eye className="w-3 h-3" />
+                    <span>View Resume & AI</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -212,6 +231,16 @@ export const CandidatePortal: React.FC = () => {
           onClose={() => setShowApplyModal(false)}
           jobs={selectedJobForApply ? [selectedJobForApply] : jobs}
           onUploadSuccess={loadData}
+        />
+      )}
+
+      {selectedAppForProfile && (
+        <CandidateProfileModal
+          isOpen={!!selectedAppForProfile}
+          onClose={() => setSelectedAppForProfile(null)}
+          candidate={selectedAppForProfile}
+          jobs={jobs}
+          onStatusUpdated={loadData}
         />
       )}
     </div>

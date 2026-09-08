@@ -7,6 +7,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { ResumeUploadModal } from '../components/recruitment/ResumeUploadModal';
 import { AIMatchModal } from '../components/recruitment/AIMatchModal';
 import { JobModal } from '../components/recruitment/JobModal';
+import { CandidateProfileModal } from '../components/recruitment/CandidateProfileModal';
 import { useAuth } from '../context/AuthContext';
 import {
   Briefcase,
@@ -20,7 +21,10 @@ import {
   Trash2,
   Edit2,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  FileText,
+  Eye,
+  Download
 } from 'lucide-react';
 
 import { RecruitmentFunnelChart } from '../components/charts/RecruitmentFunnelChart';
@@ -43,6 +47,7 @@ export const RecruitmentPage: React.FC = () => {
   const [showJobModal, setShowJobModal] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [selectedCandidateForMatch, setSelectedCandidateForMatch] = useState<Candidate | null>(null);
+  const [selectedCandidateForProfile, setSelectedCandidateForProfile] = useState<Candidate | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadData = async () => {
@@ -257,13 +262,24 @@ export const RecruitmentPage: React.FC = () => {
                       {c.ai_summary || 'Extracted resume profile and qualifications.'}
                     </p>
 
+                    {/* Resume File Badge */}
+                    {(c.original_resume_filename || c.resume_url) && (
+                      <div className="mt-3 flex items-center gap-1.5 text-[11px]">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-cyan-400 font-bold border border-blue-200/60 dark:border-blue-800/40">
+                          <FileText className="w-3 h-3" />
+                          <span>{c.original_resume_filename?.toLowerCase().endsWith('.docx') ? 'Word (.docx)' : 'Original PDF'}</span>
+                          {c.original_resume_size ? <span className="text-slate-400 font-medium">({(c.original_resume_size / 1024).toFixed(0)} KB)</span> : null}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="mt-4 pt-3 border-t border-slate-100 dark:border-navy-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                       <span>Dept: <b className="text-slate-800 dark:text-slate-200">{c.suggested_department || 'Engineering'}</b></span>
                       <span>Exp: <b className="text-slate-800 dark:text-slate-200">{c.experience_years} Yrs</b></span>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-navy-800 flex items-center justify-between gap-2">
+                  <div className="mt-4 pt-3 border-t border-slate-100 dark:border-navy-800 flex flex-wrap items-center justify-between gap-2">
                     <select
                       value={c.status}
                       onChange={(e) => handleStatusChange(c.id, e.target.value as CandidateStatus)}
@@ -277,13 +293,24 @@ export const RecruitmentPage: React.FC = () => {
                       <option value="REJECTED">Rejected</option>
                     </select>
 
-                    <button
-                      onClick={() => setSelectedCandidateForMatch(c)}
-                      className="px-3 py-1.5 rounded-xl bg-brand-50 dark:bg-brand-950/40 hover:bg-brand-100 text-brand-700 dark:text-cyan-400 text-xs font-bold border border-brand-200 dark:border-brand-800/60 flex items-center gap-1.5 transition-colors"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>AI Breakdown</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setSelectedCandidateForProfile(c)}
+                        title="View Original Resume and AI Breakdown"
+                        className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-cyan-600 hover:from-brand-700 hover:to-cyan-700 text-white text-xs font-bold shadow-apple flex items-center gap-1.5 transition-all hover:scale-[1.02]"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>View Resume & AI</span>
+                      </button>
+
+                      <button
+                        onClick={() => setSelectedCandidateForMatch(c)}
+                        title="Quick Match Breakdown"
+                        className="p-1.5 rounded-xl bg-slate-100 dark:bg-navy-800 hover:bg-slate-200 dark:hover:bg-navy-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-colors"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -383,6 +410,16 @@ export const RecruitmentPage: React.FC = () => {
           onClose={() => setSelectedCandidateForMatch(null)}
           candidate={selectedCandidateForMatch}
           jobs={jobs}
+        />
+      )}
+
+      {selectedCandidateForProfile && (
+        <CandidateProfileModal
+          isOpen={!!selectedCandidateForProfile}
+          onClose={() => setSelectedCandidateForProfile(null)}
+          candidate={selectedCandidateForProfile}
+          jobs={jobs}
+          onStatusUpdated={loadData}
         />
       )}
     </div>

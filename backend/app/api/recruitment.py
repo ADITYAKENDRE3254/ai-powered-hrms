@@ -1,7 +1,10 @@
+import os
 import json
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import get_current_user, require_roles
 from app.models.user import User, UserRole
@@ -225,3 +228,78 @@ def update_candidate_status(
     out = CandidateOut.model_validate(candidate)
     out.job_title = candidate.job.title if candidate.job else None
     return out
+
+@router.get("/candidates/{id}/resume")
+def get_candidate_resume(
+    request: Request,
+    id: int,
+    download: bool = Query(False, description="If true, returns file as download attachment; otherwise inline stream"),
+    current_user: User = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.HR_MANAGER, UserRole.RECRUITER, UserRole.DEPARTMENT_MANAGER, UserRole.CANDIDATE)),
+    db: Session = Depends(get_db)
+):
+    """Securely streams or downloads candidate's original uploaded resume with audit logging and RBAC"""
+    candidate = db.query(Candidate).filter(Candidate.id == id).first()
+    if not candidate:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Candidate not found")
+
+    if current_user.role == UserRole.CANDIDATE and candidate.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    # Locate resume file path on disk
+    file_path = None
+    if candidate.original_resume_storage_path and os.path.exists(candidate.original_resume_storage_path):
+        file_path = candidate.original_resume_storage_path
+    elif candidate.resume_url:
+        rel_path = candidate.resume_url.replace("/uploads/", "").lstrip("/\\")
+        candidate_path = os.path.join(settings.UPLOAD_DIR, rel_path)
+        if os.path.exists(candidate_path):
+            file_path = candidate_path
+        elif os.path.exists(os.path.join(settings.UPLOAD_DIR, "resumes", os.path.basename(candidate.resume_url))):
+            file_path = os.path.join(settings.UPLOAD_DIR, "resumes", os.path.basename(candidate.resume_url))
+
+    if not file_path or not os.path.exists(file_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Original resume document file not found on server storage."
+        )
+
+    filename = candidate.original_resume_filename or os.path.basename(file_path)
+    mime_type = candidate.original_resume_mime_type
+    if not mime_type:
+        ext = os.path.splitext(filename)[1].lower()
+        if ext == ".pdf":
+            mime_type = "application/pdf"
+        elif ext == ".docx":
+            mime_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        elif ext == ".doc":
+            mime_type = "application/msword"
+        else:
+            mime_type = "application/octet-stream"
+
+    action = "RESUME_DOWNLOADED" if download else "RESUME_VIEWED"
+    log_audit(
+        db=db,
+        action=action,
+        module="RECRUITMENT",
+        user=current_user,
+        record_id=str(candidate.id),
+        details={
+            "candidate_name": f"{candidate.first_name} {candidate.last_name}",
+            "filename": filename,
+            "download_mode": download
+        },
+        ip_address=request.client.host if request.client else None
+    )
+
+    disposition = "attachment" if download else "inline"
+    headers = {
+        "Content-Disposition": f'{disposition}; filename="{filename}"',
+        "Cache-Control": "private, max-age=3600",
+    }
+
+    return FileResponse(
+        path=file_path,
+        media_type=mime_type,
+        filename=filename,
+        headers=headers
+    )
