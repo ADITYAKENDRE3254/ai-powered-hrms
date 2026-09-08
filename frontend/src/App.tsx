@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -9,34 +9,44 @@ import { Header } from './components/common/Header';
 import { CommandPalette } from './components/common/CommandPalette';
 import { AIHRAssistantDrawer } from './components/ai/AIHRAssistantDrawer';
 
-// Pages
-import { Login } from './pages/auth/Login';
-import { AdminDashboard } from './pages/admin/AdminDashboard';
-import { HRDashboard } from './pages/hr/HRDashboard';
-import { ManagerDashboard } from './pages/manager/ManagerDashboard';
-import { TeamLeaderDashboard } from './pages/team-leader/TeamLeaderDashboard';
-import { RecruiterDashboard } from './pages/recruiter/RecruiterDashboard';
-import { EmployeeDashboard } from './pages/employee/EmployeeDashboard';
-import { CandidatePortal } from './pages/candidate/CandidatePortal';
-import { EmployeesPage } from './pages/EmployeesPage';
-import { DepartmentsPage } from './pages/DepartmentsPage';
-import { AttendancePage } from './pages/AttendancePage';
-import { LeavesPage } from './pages/LeavesPage';
-import { RecruitmentPage } from './pages/RecruitmentPage';
-import { PayrollPage } from './pages/PayrollPage';
-import { ReportsPage } from './pages/ReportsPage';
-import { AuditLogsPage } from './pages/AuditLogsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { WorkforceDashboard } from './pages/workforce/WorkforceDashboard';
-import { PerformanceInsights } from './pages/workforce/PerformanceInsights';
-import { AttritionInsights } from './pages/workforce/AttritionInsights';
-import { SkillIntelligence } from './pages/workforce/SkillIntelligence';
-import { DepartmentIntelligence } from './pages/workforce/DepartmentIntelligence';
-import { MyAIInsights } from './pages/workforce/MyAIInsights';
-import { TrainingDashboard } from './pages/training/TrainingDashboard';
-import { MyTraining } from './pages/training/MyTraining';
-import { CompensationPage } from './pages/CompensationPage';
-import { MySalaryPage } from './pages/employee/MySalaryPage';
+// Lazy-Loaded Page Components for Optimized Route Code-Splitting
+const Login = lazy(() => import('./pages/auth/Login').then(m => ({ default: m.Login })));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const HRDashboard = lazy(() => import('./pages/hr/HRDashboard').then(m => ({ default: m.HRDashboard })));
+const ManagerDashboard = lazy(() => import('./pages/manager/ManagerDashboard').then(m => ({ default: m.ManagerDashboard })));
+const TeamLeaderDashboard = lazy(() => import('./pages/team-leader/TeamLeaderDashboard').then(m => ({ default: m.TeamLeaderDashboard })));
+const RecruiterDashboard = lazy(() => import('./pages/recruiter/RecruiterDashboard').then(m => ({ default: m.RecruiterDashboard })));
+const EmployeeDashboard = lazy(() => import('./pages/employee/EmployeeDashboard').then(m => ({ default: m.EmployeeDashboard })));
+const CandidatePortal = lazy(() => import('./pages/candidate/CandidatePortal').then(m => ({ default: m.CandidatePortal })));
+const EmployeesPage = lazy(() => import('./pages/EmployeesPage').then(m => ({ default: m.EmployeesPage })));
+const DepartmentsPage = lazy(() => import('./pages/DepartmentsPage').then(m => ({ default: m.DepartmentsPage })));
+const AttendancePage = lazy(() => import('./pages/AttendancePage').then(m => ({ default: m.AttendancePage })));
+const LeavesPage = lazy(() => import('./pages/LeavesPage').then(m => ({ default: m.LeavesPage })));
+const RecruitmentPage = lazy(() => import('./pages/RecruitmentPage').then(m => ({ default: m.RecruitmentPage })));
+const PayrollPage = lazy(() => import('./pages/PayrollPage').then(m => ({ default: m.PayrollPage })));
+const ReportsPage = lazy(() => import('./pages/ReportsPage').then(m => ({ default: m.ReportsPage })));
+const AuditLogsPage = lazy(() => import('./pages/AuditLogsPage').then(m => ({ default: m.AuditLogsPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const WorkforceDashboard = lazy(() => import('./pages/workforce/WorkforceDashboard').then(m => ({ default: m.WorkforceDashboard })));
+const PerformanceInsights = lazy(() => import('./pages/workforce/PerformanceInsights').then(m => ({ default: m.PerformanceInsights })));
+const AttritionInsights = lazy(() => import('./pages/workforce/AttritionInsights').then(m => ({ default: m.AttritionInsights })));
+const SkillIntelligence = lazy(() => import('./pages/workforce/SkillIntelligence').then(m => ({ default: m.SkillIntelligence })));
+const DepartmentIntelligence = lazy(() => import('./pages/workforce/DepartmentIntelligence').then(m => ({ default: m.DepartmentIntelligence })));
+const MyAIInsights = lazy(() => import('./pages/workforce/MyAIInsights').then(m => ({ default: m.MyAIInsights })));
+const TrainingDashboard = lazy(() => import('./pages/training/TrainingDashboard').then(m => ({ default: m.TrainingDashboard })));
+const MyTraining = lazy(() => import('./pages/training/MyTraining').then(m => ({ default: m.MyTraining })));
+const CompensationPage = lazy(() => import('./pages/CompensationPage').then(m => ({ default: m.CompensationPage })));
+const MySalaryPage = lazy(() => import('./pages/employee/MySalaryPage').then(m => ({ default: m.MySalaryPage })));
+
+// Route Loading State Fallback
+const PageLoader: React.FC = () => (
+  <div className="flex flex-col items-center justify-center p-12 min-h-[360px] animate-fade-in">
+    <div className="relative flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-indigo-200 dark:border-navy-700 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin"></div>
+    </div>
+    <span className="mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">Loading module...</span>
+  </div>
+);
 
 // Layout Container
 const AppLayout: React.FC<{ children: React.ReactNode; pageTitle: string; pageSubtitle?: string }> = ({
@@ -119,8 +129,9 @@ export const App: React.FC = () => {
       <AuthProvider>
         <NotificationProvider>
           <BrowserRouter>
-            <Routes>
-            {/* Public Auth Route */}
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+              {/* Public Auth Route */}
             <Route path="/login" element={<Login />} />
 
             {/* Root Intelligent Navigation */}
@@ -419,8 +430,9 @@ export const App: React.FC = () => {
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </BrowserRouter>
-      </NotificationProvider>
+        </Suspense>
+      </BrowserRouter>
+    </NotificationProvider>
     </AuthProvider>
   </ThemeProvider>
   );

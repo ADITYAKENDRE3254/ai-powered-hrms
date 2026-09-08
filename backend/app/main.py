@@ -2,6 +2,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.core.config import settings
@@ -82,6 +83,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# GZip Response Compression Middleware (Compresses responses >= 1KB)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Explicit Health Check Endpoint (Returns HTTP 200 without leaking secrets)
 @app.get("/health", status_code=200)
