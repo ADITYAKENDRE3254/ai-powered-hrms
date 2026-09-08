@@ -19,7 +19,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Shield,
-  Layers
+  Layers,
+  IndianRupee
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types';
@@ -154,6 +155,19 @@ const navSections: NavSection[] = [
         icon: Briefcase,
         roles: ['SUPER_ADMIN', 'HR_MANAGER', 'RECRUITER'],
         badge: 'AI Match',
+      },
+      {
+        label: 'Compensation & Salary',
+        to: '/compensation',
+        icon: IndianRupee,
+        roles: ['SUPER_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER'],
+        badge: '✦ 3-Tier',
+      },
+      {
+        label: 'My Salary Profile',
+        to: '/my-salary',
+        icon: IndianRupee,
+        roles: ['EMPLOYEE'],
       },
       {
         label: 'Payroll & Payslips',

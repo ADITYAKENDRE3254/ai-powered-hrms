@@ -24,7 +24,8 @@ from app.api import (
     audit,
     settings as settings_api,
     workforce_intelligence,
-    training
+    training,
+    compensation
 )
 from app.tasks.scheduler import start_scheduler, stop_scheduler
 
@@ -105,6 +106,7 @@ app.include_router(notifications.router, prefix=settings.API_V1_STR)
 app.include_router(reports.router, prefix=settings.API_V1_STR)
 app.include_router(audit.router, prefix=settings.API_V1_STR)
 app.include_router(settings_api.router, prefix=settings.API_V1_STR)
+app.include_router(compensation.router, prefix=settings.API_V1_STR)
 
 # =========================================================================
 # Single-Link SPA Frontend Serving Setup

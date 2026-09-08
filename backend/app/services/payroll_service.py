@@ -49,21 +49,40 @@ def calculate_employee_payroll(
     payable_days = min(total_working_days, present_days + approved_leave_days)
     lwp_days = max(0, total_working_days - payable_days)
 
-    per_day_rate = round(employee.monthly_salary / float(total_working_days), 2)
-    basic_salary = employee.monthly_salary
-    allowances = employee.allowances or 0.0
+    # 3. Resolve active salary structure using 3-tier Priority Engine (Individual -> Position -> Department -> Base)
+    from app.services.compensation_service import resolve_employee_effective_salary
+    eff_salary = resolve_employee_effective_salary(db, employee, month_end)
+
+    if eff_salary.get("source") == "EMPLOYEE_DEFAULT":
+        basic_salary = float(employee.monthly_salary or 0.0)
+        allowances = float(employee.allowances or 0.0)
+        gross_salary = round(basic_salary + allowances, 2)
+        per_day_rate = round(basic_salary / float(total_working_days), 2)
+        pf_deduction = round(basic_salary * ((employee.pf_percentage or 12.0) / 100.0), 2)
+        tax_deduction = round(gross_salary * ((employee.tax_percentage or 10.0) / 100.0), 2)
+        other_deductions = 0.0
+    else:
+        gross_salary = eff_salary["gross_salary"]
+        basic_salary = eff_salary["basic_salary"]
+        allowances = round(
+            eff_salary.get("hra", 0.0) +
+            eff_salary.get("transport_allowance", 0.0) +
+            eff_salary.get("medical_allowance", 0.0) +
+            eff_salary.get("other_allowances", 0.0) +
+            eff_salary.get("bonus", 0.0), 2
+        )
+        per_day_rate = round(gross_salary / float(total_working_days), 2)
+        pf_deduction = round(eff_salary.get("pf_deduction", 0.0), 2)
+        tax_deduction = round(eff_salary.get("tax_deduction", 0.0), 2)
+        other_deductions = round(eff_salary.get("professional_tax", 0.0) + eff_salary.get("other_deductions", 0.0), 2)
 
     lwp_deduction = round(per_day_rate * lwp_days, 2)
-    pf_deduction = round(basic_salary * (employee.pf_percentage / 100.0), 2)
-    tax_deduction = round(basic_salary * (employee.tax_percentage / 100.0), 2)
-    other_deductions = 0.0
-
-    total_earnings = round(basic_salary + allowances, 2)
+    total_earnings = round(gross_salary, 2)
     total_deductions = round(lwp_deduction + pf_deduction + tax_deduction + other_deductions, 2)
     net_salary = max(0.0, round(total_earnings - total_deductions, 2))
 
     return {
-        "monthly_salary": basic_salary,
+        "monthly_salary": gross_salary,
         "working_days": total_working_days,
         "present_days": present_days,
         "approved_leave_days": approved_leave_days,

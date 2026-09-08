@@ -18,6 +18,15 @@ from app.models.attrition_prediction import AttritionPrediction, AttritionRiskLe
 from app.models.training import TrainingProgram, TrainingAssignment, TrainingDifficulty, AssignmentStatus
 from app.models.training_recommendation import TrainingRecommendation, RecommendationPriority
 from app.models.workforce_model_run import WorkforceModelRun
+# Compensation Models
+from app.models.compensation import (
+    SalaryType,
+    SalaryApprovalStatus,
+    DepartmentSalaryRule,
+    PositionSalaryRule,
+    EmployeeSalary,
+    SalaryHistory
+)
 
 __all__ = [
     "User",
@@ -61,7 +70,11 @@ __all__ = [
     "TrainingAssignment",
     "TrainingDifficulty",
     "AssignmentStatus",
-    "TrainingRecommendation",
-    "RecommendationPriority",
-    "WorkforceModelRun"
+    "WorkforceModelRun",
+    "SalaryType",
+    "SalaryApprovalStatus",
+    "DepartmentSalaryRule",
+    "PositionSalaryRule",
+    "EmployeeSalary",
+    "SalaryHistory"
 ]

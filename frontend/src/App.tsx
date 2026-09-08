@@ -35,6 +35,8 @@ import { DepartmentIntelligence } from './pages/workforce/DepartmentIntelligence
 import { MyAIInsights } from './pages/workforce/MyAIInsights';
 import { TrainingDashboard } from './pages/training/TrainingDashboard';
 import { MyTraining } from './pages/training/MyTraining';
+import { CompensationPage } from './pages/CompensationPage';
+import { MySalaryPage } from './pages/employee/MySalaryPage';
 
 // Layout Container
 const AppLayout: React.FC<{ children: React.ReactNode; pageTitle: string; pageSubtitle?: string }> = ({
@@ -253,6 +255,28 @@ export const App: React.FC = () => {
                 <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'RECRUITER']}>
                   <AppLayout pageTitle="Recruitment & AI Matching" pageSubtitle="Candidate skill extraction and vacancy management">
                     <RecruitmentPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/compensation"
+              element={
+                <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'HR_MANAGER', 'DEPARTMENT_MANAGER']}>
+                  <AppLayout pageTitle="Salary & Compensation Management" pageSubtitle="3-tier priority configuration, AI advisory and audit timeline">
+                    <CompensationPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/my-salary"
+              element={
+                <ProtectedRoute allowedRoles={['EMPLOYEE']}>
+                  <AppLayout pageTitle="My Compensation & Salary Structure" pageSubtitle="Take-home earnings, statutory deductions, and benchmark bands">
+                    <MySalaryPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

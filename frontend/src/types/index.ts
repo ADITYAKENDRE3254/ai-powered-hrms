@@ -505,3 +505,180 @@ export interface DepartmentWorkforceAnalytics {
   }>;
 }
 
+// ==========================================
+// SALARY & COMPENSATION MANAGEMENT TYPES
+// ==========================================
+
+export type SalaryType = 'MONTHLY' | 'HOURLY' | 'ANNUAL' | 'CONTRACT';
+export type SalaryApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type SalarySource = 'INDIVIDUAL' | 'POSITION' | 'DEPARTMENT' | 'EMPLOYEE_DEFAULT';
+
+export interface DepartmentSalaryRule {
+  id: number;
+  department_id: number;
+  department_name?: string;
+  min_salary: number;
+  max_salary: number;
+  currency: string;
+  effective_date: string;
+  is_active: boolean;
+  notes?: string;
+  created_by?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PositionSalaryRule {
+  id: number;
+  department_id?: number | null;
+  department_name?: string;
+  position_title: string;
+  min_salary: number;
+  max_salary: number;
+  default_salary: number;
+  salary_type: SalaryType;
+  effective_date: string;
+  is_active: boolean;
+  notes?: string;
+  created_by?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeSalary {
+  id: number;
+  employee_id: number;
+  employee_name?: string;
+  employee_code?: string;
+  department_name?: string;
+  position?: string;
+  gross_salary: number;
+  basic_salary: number;
+  hra: number;
+  transport_allowance: number;
+  medical_allowance: number;
+  other_allowances: number;
+  bonus: number;
+  pf_deduction: number;
+  tax_deduction: number;
+  professional_tax: number;
+  other_deductions: number;
+  total_deductions: number;
+  net_salary: number;
+  salary_type: SalaryType;
+  effective_date: string;
+  status: SalaryApprovalStatus;
+  reason?: string;
+  requested_by?: number;
+  approved_by?: number;
+  approved_at?: string;
+  rejection_reason?: string;
+  department_min_salary?: number;
+  department_max_salary?: number;
+  position_min_salary?: number;
+  position_max_salary?: number;
+  position_default_salary?: number;
+  salary_source: SalarySource;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EmployeeCompensationSummary {
+  employee_id: number;
+  employee_name: string;
+  employee_code: string;
+  department_id?: number;
+  department_name?: string;
+  position: string;
+  current_gross_salary: number;
+  current_net_salary: number;
+  department_range: string;
+  position_range: string;
+  suggested_salary: number;
+  actual_salary: number;
+  salary_source: SalarySource;
+  status: SalaryApprovalStatus;
+  effective_date: string;
+}
+
+export interface SalaryHistory {
+  id: number;
+  employee_id: number;
+  employee_name?: string;
+  employee_code?: string;
+  previous_gross_salary: number;
+  new_gross_salary: number;
+  previous_net_salary: number;
+  new_net_salary: number;
+  change_amount: number;
+  change_percentage: number;
+  reason?: string;
+  effective_date: string;
+  changed_by_user_id?: number;
+  changed_by_name?: string;
+  created_at: string;
+}
+
+export interface AISalaryRecommendation {
+  recommended_salary: number;
+  recommended_range_min: number;
+  recommended_range_max: number;
+  confidence_score: number;
+  factors: string[];
+  explanation: string;
+  is_insufficient_data: boolean;
+  notes: string;
+}
+
+export interface AISalaryRecommendationRequest {
+  employee_id?: number;
+  department_id?: number;
+  position_title: string;
+  experience_years?: number;
+  skills?: string[];
+}
+
+export interface DepartmentSalaryMetric {
+  department: string;
+  employee_count: number;
+  min_salary: number;
+  max_salary: number;
+  avg_salary: number;
+  total_budget: number;
+}
+
+export interface PositionSalaryMetric {
+  position_title: string;
+  department: string;
+  min_salary: number;
+  recommended_salary: number;
+  max_salary: number;
+  avg_actual_salary: number;
+  employee_count: number;
+}
+
+export interface SalaryDistributionBucket {
+  range: string;
+  count: number;
+  color: string;
+}
+
+export interface MonthlyGrowthTrend {
+  month: string;
+  budget: number;
+  avg_salary: number;
+}
+
+export interface CompensationDashboardData {
+  total_monthly_payroll_budget: number;
+  avg_company_salary: number;
+  total_configured_departments: number;
+  total_configured_positions: number;
+  pending_approvals_count: number;
+  salary_growth_yoy_percent: number;
+  department_metrics: DepartmentSalaryMetric[];
+  position_metrics: PositionSalaryMetric[];
+  salary_distribution_buckets: SalaryDistributionBucket[];
+  monthly_growth_trend: MonthlyGrowthTrend[];
+}
+
