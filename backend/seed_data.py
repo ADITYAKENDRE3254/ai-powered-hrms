@@ -510,7 +510,23 @@ def seed_database(reset: bool = False):
             }
         ]
 
+        uploads_resume_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads", "resumes")
+        os.makedirs(uploads_resume_dir, exist_ok=True)
+
         for cd in candidates_data:
+            # Generate sample resume document
+            ext = ".docx" if cd["first"] == "Rohan" else ".pdf"
+            sample_filename = f"{cd['first']}_{cd['last']}_Resume{ext}"
+            sample_storage_path = os.path.join(uploads_resume_dir, sample_filename)
+            sample_content = f"Mock {ext.upper()} resume document for candidate {cd['first']} {cd['last']}. Qualifications: {cd['education']}. Experience: {cd['exp']} years.".encode("utf-8")
+            if ext == ".pdf":
+                sample_content = b"%PDF-1.4\n" + sample_content
+
+            with open(sample_storage_path, "wb") as f:
+                f.write(sample_content)
+
+            mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document" if ext == ".docx" else "application/pdf"
+
             c = Candidate(
                 job_id=cd["job_id"],
                 user_id=cd["user_id"],
@@ -518,6 +534,12 @@ def seed_database(reset: bool = False):
                 last_name=cd["last"],
                 email=cd["email"],
                 phone=cd["phone"],
+                original_resume_filename=sample_filename,
+                original_resume_storage_path=sample_storage_path,
+                original_resume_mime_type=mime,
+                original_resume_size=len(sample_content),
+                uploaded_at=datetime.now(timezone.utc) - timedelta(days=2),
+                resume_url=f"/uploads/resumes/{sample_filename}",
                 extracted_skills=cd["skills"],
                 matching_skills=cd["matching"],
                 missing_skills=cd["missing"],

@@ -28,10 +28,34 @@ from app.api import (
 )
 from app.tasks.scheduler import start_scheduler, stop_scheduler
 
+def ensure_schema_compatibility():
+    """Adds missing columns to SQLite database tables if they do not exist"""
+    try:
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            # Check candidates table columns
+            result = conn.execute(text("PRAGMA table_info(candidates)"))
+            cols = [row[1] for row in result.fetchall()]
+            if cols:
+                if "original_resume_filename" not in cols:
+                    conn.execute(text("ALTER TABLE candidates ADD COLUMN original_resume_filename VARCHAR(255)"))
+                if "original_resume_storage_path" not in cols:
+                    conn.execute(text("ALTER TABLE candidates ADD COLUMN original_resume_storage_path VARCHAR(500)"))
+                if "original_resume_mime_type" not in cols:
+                    conn.execute(text("ALTER TABLE candidates ADD COLUMN original_resume_mime_type VARCHAR(100)"))
+                if "original_resume_size" not in cols:
+                    conn.execute(text("ALTER TABLE candidates ADD COLUMN original_resume_size INTEGER"))
+                if "uploaded_at" not in cols:
+                    conn.execute(text("ALTER TABLE candidates ADD COLUMN uploaded_at DATETIME"))
+                conn.commit()
+    except Exception as e:
+        print(f"[Schema Migration Warning] {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Create tables if not exist
     Base.metadata.create_all(bind=engine)
+    ensure_schema_compatibility()
     # Start automated background payroll scheduler
     start_scheduler()
     yield
