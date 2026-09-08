@@ -188,12 +188,15 @@ def match_candidate_to_job(
     # Parse required skills from job
     req_skills = []
     if job_required_skills_str:
-        if job_required_skills_str.startswith("["):
-            try:
-                req_skills = json.loads(job_required_skills_str)
-            except Exception:
+        try:
+            parsed_json = json.loads(job_required_skills_str)
+            if isinstance(parsed_json, list):
+                req_skills = [str(s) for s in parsed_json]
+            elif isinstance(parsed_json, dict) and "skills" in parsed_json and isinstance(parsed_json["skills"], list):
+                req_skills = [str(s) for s in parsed_json["skills"]]
+            else:
                 req_skills = [s.strip() for s in job_required_skills_str.split(",") if s.strip()]
-        else:
+        except Exception:
             req_skills = [s.strip() for s in job_required_skills_str.split(",") if s.strip()]
 
     req_skills_normalized = [s.lower() for s in req_skills]
