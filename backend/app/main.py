@@ -58,6 +58,20 @@ async def lifespan(app: FastAPI):
     # Startup: Create tables if not exist
     Base.metadata.create_all(bind=engine)
     ensure_schema_compatibility()
+
+    # Auto-seed database if fresh SQLite on Vercel
+    if os.environ.get("VERCEL"):
+        try:
+            from app.models.user import User
+            from app.core.database import SessionLocal
+            db = SessionLocal()
+            if not db.query(User).filter(User.email == "admin@hrms.local").first():
+                from seed_data import seed_database
+                seed_database()
+            db.close()
+        except Exception as e:
+            print(f"[Vercel Seed Warning] {e}")
+
     # Start automated background payroll scheduler if not in serverless Vercel environment
     if not os.environ.get("VERCEL"):
         start_scheduler()
@@ -92,6 +106,7 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Explicit Health Check Endpoint (Returns HTTP 200 without leaking secrets)
 @app.get("/health", status_code=200)
+@app.get("/api/health", status_code=200)
 async def health_check():
     """Lightweight production health probe for uptime monitors and container orchestrators"""
     return {
@@ -102,10 +117,13 @@ async def health_check():
     }
 
 # Mount static uploads directory for resumes and documents
-os.makedirs("./uploads/resumes", exist_ok=True)
-os.makedirs("./uploads/documents", exist_ok=True)
-os.makedirs("./uploads/payslips", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="./uploads"), name="uploads")
+try:
+    os.makedirs(os.path.join(settings.UPLOAD_DIR, "resumes"), exist_ok=True)
+    os.makedirs(os.path.join(settings.UPLOAD_DIR, "documents"), exist_ok=True)
+    os.makedirs(os.path.join(settings.UPLOAD_DIR, "payslips"), exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
+except Exception as e:
+    print(f"[Uploads Mount Warning] {e}")
 
 # Include Routers
 app.include_router(auth.router, prefix=settings.API_V1_STR)
