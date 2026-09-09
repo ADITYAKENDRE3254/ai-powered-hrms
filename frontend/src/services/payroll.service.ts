@@ -1,4 +1,4 @@
-import api from './api';
+import api, { API_BASE_URL } from './api';
 import { Payroll, PayrollItem } from '../types';
 
 export const payrollService = {
@@ -28,6 +28,6 @@ export const payrollService = {
   },
 
   getPayslipDownloadUrl(id: number): string {
-    return `/api/payslips/${id}/download`;
+    return `${API_BASE_URL}/payslips/${id}/download`;
   }
 };

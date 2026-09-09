@@ -43,8 +43,11 @@ frontend/dist-ssr/
 .env.development
 
 # Database & Uploads
+*.db
+*.sqlite3
 backend/*.db
 backend/*.sqlite3
+uploads/
 backend/uploads/resumes/*
 !backend/uploads/resumes/.gitkeep
 backend/uploads/payslips/*

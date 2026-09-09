@@ -1,6 +1,10 @@
 import os
-from typing import Optional
+import shutil
+from typing import Optional, Union
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
+
+IS_VERCEL = bool(os.environ.get("VERCEL"))
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "AI-Powered HRMS"
@@ -9,8 +13,8 @@ class Settings(BaseSettings):
 
     # Database - Default to SQLite (dev/zero-config), override with PostgreSQL via DATABASE_URL in .env (production)
     # For PostgreSQL: postgresql://user:password@localhost:5432/ai_hrms_db
-    # For SQLite: sqlite:///./hrms.db
-    DATABASE_URL: str = "sqlite:///./hrms.db"
+    # For SQLite: sqlite:///./hrms.db (or sqlite:////tmp/hrms.db on Vercel)
+    DATABASE_URL: str = "sqlite:////tmp/hrms.db" if IS_VERCEL else "sqlite:///./hrms.db"
 
     # JWT
     JWT_SECRET_KEY: str = "super_secret_jwt_key_ai_hrms_2026_production_grade_token_signature_99182"
@@ -27,8 +31,8 @@ class Settings(BaseSettings):
     OFFICE_LONGITUDE: float = 77.5945627
     GEOFENCE_RADIUS: float = 100.0  # Meters
 
-    # File Uploads
-    UPLOAD_DIR: str = "./uploads"
+    # File Uploads (Uses /tmp on Vercel serverless to avoid read-only filesystem errors)
+    UPLOAD_DIR: str = "/tmp/uploads" if IS_VERCEL else "./uploads"
     MAX_FILE_SIZE_MB: int = 10
 
     # SMTP / Email Notifications
@@ -42,12 +46,28 @@ class Settings(BaseSettings):
     EMAILS_FROM_NAME: str = "AI-HRMS Talent Acquisition"
 
     # CORS
-    BACKEND_CORS_ORIGINS: list[str] = [
+    BACKEND_CORS_ORIGINS: Union[list[str], str] = [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000"
     ]
+
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def assemble_cors_origins(cls, v):
+        if isinstance(v, str):
+            v_trimmed = v.strip()
+            if v_trimmed.startswith("[") and v_trimmed.endswith("]"):
+                import json
+                try:
+                    return json.loads(v_trimmed)
+                except Exception:
+                    pass
+            return [i.strip() for i in v_trimmed.split(",") if i.strip()]
+        elif isinstance(v, list):
+            return [str(i).strip() for i in v if i]
+        return v
 
     model_config = {
         "env_file": ".env",
@@ -56,6 +76,24 @@ class Settings(BaseSettings):
     }
 
 settings = Settings()
+
+# On Vercel, copy pre-seeded hrms.db to /tmp/hrms.db on initial serverless invocation if present
+if IS_VERCEL and settings.DATABASE_URL.startswith("sqlite"):
+    tmp_db = "/tmp/hrms.db"
+    if not os.path.exists(tmp_db) or os.path.getsize(tmp_db) == 0:
+        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        candidates = [
+            os.path.join(base_dir, "hrms.db"),
+            os.path.join(base_dir, "..", "backend", "hrms.db"),
+            os.path.join(base_dir, "..", "hrms.db"),
+        ]
+        for src in candidates:
+            if os.path.isfile(src) and os.path.getsize(src) > 0:
+                try:
+                    shutil.copyfile(src, tmp_db)
+                    break
+                except Exception:
+                    pass
 
 # Ensure upload directories exist
 os.makedirs(os.path.join(settings.UPLOAD_DIR, "resumes"), exist_ok=True)

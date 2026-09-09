@@ -1,4 +1,4 @@
-import api from './api';
+import api, { API_BASE_URL } from './api';
 import { Job, Candidate, CandidateStatus } from '../types';
 
 export const recruitmentService = {
@@ -52,7 +52,7 @@ export const recruitmentService = {
   },
 
   getResumeUrl(candidateId: number, download = false): string {
-    return `/api/recruitment/candidates/${candidateId}/resume${download ? '?download=true' : ''}`;
+    return `${API_BASE_URL}/recruitment/candidates/${candidateId}/resume${download ? '?download=true' : ''}`;
   },
 
   async getResumeBlobUrl(candidateId: number): Promise<string> {

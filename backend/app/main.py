@@ -58,11 +58,13 @@ async def lifespan(app: FastAPI):
     # Startup: Create tables if not exist
     Base.metadata.create_all(bind=engine)
     ensure_schema_compatibility()
-    # Start automated background payroll scheduler
-    start_scheduler()
+    # Start automated background payroll scheduler if not in serverless Vercel environment
+    if not os.environ.get("VERCEL"):
+        start_scheduler()
     yield
     # Shutdown
-    stop_scheduler()
+    if not os.environ.get("VERCEL"):
+        stop_scheduler()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -79,6 +81,7 @@ origins = [str(origin).strip() for origin in settings.BACKEND_CORS_ORIGINS if or
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins if origins else ["*"],
+    allow_origin_regex=r"^https:\/\/.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
