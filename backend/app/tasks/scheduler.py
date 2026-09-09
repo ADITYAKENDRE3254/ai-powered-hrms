@@ -1,9 +1,12 @@
 import datetime
-from apscheduler.schedulers.background import BackgroundScheduler
 from app.core.database import SessionLocal
 from app.services.payroll_service import generate_monthly_payroll
 
-scheduler = BackgroundScheduler()
+try:
+    from apscheduler.schedulers.background import BackgroundScheduler
+    scheduler = BackgroundScheduler()
+except Exception:
+    scheduler = None
 
 def scheduled_monthly_payroll_job():
     """Background task running automatically at end of month or start of next month"""
@@ -29,6 +32,8 @@ def scheduled_monthly_payroll_job():
 
 def start_scheduler():
     """Starts the background scheduler for payroll automation"""
+    if not scheduler:
+        return
     try:
         # Schedule on 1st of every month at 00:00:00
         scheduler.add_job(
@@ -46,5 +51,5 @@ def start_scheduler():
         print(f"[Scheduler] Warning: Scheduler initialization: {e}")
 
 def stop_scheduler():
-    if scheduler.running:
+    if scheduler and scheduler.running:
         scheduler.shutdown()

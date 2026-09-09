@@ -3,15 +3,15 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://backend-red-ten-93.vercel.app/api/:path*"
+      "destination": "https://backend-adityakendre3254.vercel.app/api/:path*"
     },
     {
       "source": "/docs",
-      "destination": "https://backend-red-ten-93.vercel.app/docs"
+      "destination": "https://backend-adityakendre3254.vercel.app/docs"
     },
     {
       "source": "/openapi.json",
-      "destination": "https://backend-red-ten-93.vercel.app/api/openapi.json"
+      "destination": "https://backend-adityakendre3254.vercel.app/api/openapi.json"
     },
     {
       "source": "/(.*)",
