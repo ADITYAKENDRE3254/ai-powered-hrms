@@ -2,6 +2,18 @@
   "framework": "vite",
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://ai-powered-hrms-backend-adityakendre3254.vercel.app/api/:path*"
+    },
+    {
+      "source": "/docs",
+      "destination": "https://ai-powered-hrms-backend-adityakendre3254.vercel.app/docs"
+    },
+    {
+      "source": "/openapi.json",
+      "destination": "https://ai-powered-hrms-backend-adityakendre3254.vercel.app/api/openapi.json"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
