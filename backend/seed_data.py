@@ -17,6 +17,130 @@ from app.models.payroll import Payroll, PayrollItem, PayrollStatus
 from app.models.notification import Notification, NotificationType
 from app.models.setting import OfficeSetting
 from app.services.pdf_service import generate_payslip_pdf
+from app.core.config import settings
+
+def seed_candidates_if_missing(db):
+    """Safely seeds sample candidates into database if none exist"""
+    try:
+        if db.query(Candidate).first():
+            return
+
+        jobs = db.query(Job).all()
+        if not jobs:
+            return
+
+        cand_user = db.query(User).filter(User.email == "candidate@hrms.local").first()
+        cand_user_id = cand_user.id if cand_user else None
+
+        candidates_data = [
+            {
+                "job_id": jobs[0].id,
+                "user_id": cand_user_id,
+                "first": "Aarav",
+                "last": "Mehta",
+                "email": "candidate@hrms.local",
+                "phone": "+91 9988776655",
+                "skills": '["Python", "FastAPI", "SQL", "PostgreSQL", "React", "Git"]',
+                "matching": '["Python", "FastAPI", "SQL", "PostgreSQL", "Git"]',
+                "missing": '["Docker"]',
+                "score": 87.5,
+                "exp": 3.5,
+                "education": "B.Tech in Computer Science",
+                "roles": '["Backend Developer", "Software Engineer"]',
+                "dept": "Engineering",
+                "summary": "Strong backend candidate with extensive FastAPI, SQL, and database experience. Missing Docker containerization proficiency. High candidate match score.",
+                "status": CandidateStatus.AI_SCREENED
+            },
+            {
+                "job_id": jobs[1].id if len(jobs) > 1 else jobs[0].id,
+                "user_id": None,
+                "first": "Sophia",
+                "last": "Chen",
+                "email": "sophia.chen@example.com",
+                "phone": "+1 415-555-0182",
+                "skills": '["Python", "Machine Learning", "PyTorch", "NLP", "Pandas", "Scikit-Learn", "Deep Learning"]',
+                "matching": '["Python", "PyTorch", "Machine Learning", "NLP", "Pandas", "Scikit-Learn"]',
+                "missing": '["LLM"]',
+                "score": 92.0,
+                "exp": 4.0,
+                "education": "Master of Science in Artificial Intelligence",
+                "roles": '["ML Researcher", "Data Scientist"]',
+                "dept": "Artificial Intelligence & ML",
+                "summary": "Exceptional fit for AI/ML role with deep experience in PyTorch and NLP research.",
+                "status": CandidateStatus.SHORTLISTED
+            },
+            {
+                "job_id": jobs[2].id if len(jobs) > 2 else jobs[0].id,
+                "user_id": None,
+                "first": "Rohan",
+                "last": "Verma",
+                "email": "rohan.verma@example.com",
+                "phone": "+91 9811223344",
+                "skills": '["Talent Acquisition", "Recruitment", "Employee Relations", "Onboarding"]',
+                "matching": '["Talent Acquisition", "Recruitment", "Employee Relations"]',
+                "missing": '["Payroll Processing", "HR Policies"]',
+                "score": 76.0,
+                "exp": 2.5,
+                "education": "MBA in Human Resource Management",
+                "roles": '["HR Executive", "Recruitment Specialist"]',
+                "dept": "Human Resources",
+                "summary": "Solid recruitment profile with strong talent acquisition skills.",
+                "status": CandidateStatus.APPLIED
+            }
+        ]
+
+        uploads_resume_dir = os.path.join(settings.UPLOAD_DIR, "resumes")
+        try:
+            os.makedirs(uploads_resume_dir, exist_ok=True)
+        except Exception:
+            pass
+
+        for cd in candidates_data:
+            ext = ".docx" if cd["first"] == "Rohan" else ".pdf"
+            sample_filename = f"{cd['first']}_{cd['last']}_Resume{ext}"
+            sample_storage_path = os.path.join(uploads_resume_dir, sample_filename)
+            sample_content = f"Mock {ext.upper()} resume document for candidate {cd['first']} {cd['last']}. Qualifications: {cd['education']}. Experience: {cd['exp']} years.".encode("utf-8")
+            if ext == ".pdf":
+                sample_content = b"%PDF-1.4\n" + sample_content
+
+            try:
+                with open(sample_storage_path, "wb") as f:
+                    f.write(sample_content)
+            except Exception:
+                pass
+
+            mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document" if ext == ".docx" else "application/pdf"
+
+            c = Candidate(
+                job_id=cd["job_id"],
+                user_id=cd["user_id"],
+                first_name=cd["first"],
+                last_name=cd["last"],
+                email=cd["email"],
+                phone=cd["phone"],
+                original_resume_filename=sample_filename,
+                original_resume_storage_path=sample_storage_path,
+                original_resume_mime_type=mime,
+                original_resume_size=len(sample_content),
+                uploaded_at=datetime.now(timezone.utc) - timedelta(days=2),
+                resume_url=f"/uploads/resumes/{sample_filename}",
+                extracted_skills=cd["skills"],
+                matching_skills=cd["matching"],
+                missing_skills=cd["missing"],
+                match_score=cd["score"],
+                experience_years=cd["exp"],
+                education=cd["education"],
+                previous_roles=cd["roles"],
+                suggested_department=cd["dept"],
+                ai_summary=cd["summary"],
+                status=cd["status"]
+            )
+            db.add(c)
+        db.commit()
+        print("✓ Sample candidates seeded successfully.")
+    except Exception as e:
+        print(f"[Seed Candidates Warning] {e}")
+        db.rollback()
 
 def seed_database(reset: bool = False):
     print("🌱 Initializing database tables and seeding demo data...")
@@ -451,108 +575,9 @@ def seed_database(reset: bool = False):
             db.commit()
             db.refresh(j)
             jobs.append(j)
-
         # 9. Sample Candidates with AI Matching
-        candidates_data = [
-            {
-                "job_id": jobs[0].id,
-                "user_id": users["candidate@hrms.local"].id,
-                "first": "Aarav",
-                "last": "Mehta",
-                "email": "candidate@hrms.local",
-                "phone": "+91 9988776655",
-                "skills": '["Python", "FastAPI", "SQL", "PostgreSQL", "React", "Git"]',
-                "matching": '["Python", "FastAPI", "SQL", "PostgreSQL", "Git"]',
-                "missing": '["Docker"]',
-                "score": 87.5,
-                "exp": 3.5,
-                "education": "B.Tech in Computer Science",
-                "roles": '["Backend Developer", "Software Engineer"]',
-                "dept": "Engineering",
-                "summary": "Strong backend candidate with extensive FastAPI, SQL, and database experience. Missing Docker containerization proficiency. High candidate match score.",
-                "status": CandidateStatus.AI_SCREENED
-            },
-            {
-                "job_id": jobs[1].id,
-                "user_id": None,
-                "first": "Sophia",
-                "last": "Chen",
-                "email": "sophia.chen@example.com",
-                "phone": "+1 415-555-0182",
-                "skills": '["Python", "Machine Learning", "PyTorch", "NLP", "Pandas", "Scikit-Learn", "Deep Learning"]',
-                "matching": '["Python", "PyTorch", "Machine Learning", "NLP", "Pandas", "Scikit-Learn"]',
-                "missing": '["LLM"]',
-                "score": 92.0,
-                "exp": 4.0,
-                "education": "Master of Science in Artificial Intelligence",
-                "roles": '["ML Researcher", "Data Scientist"]',
-                "dept": "Artificial Intelligence & ML",
-                "summary": "Exceptional fit for AI/ML role with deep experience in PyTorch and NLP research.",
-                "status": CandidateStatus.SHORTLISTED
-            },
-            {
-                "job_id": jobs[2].id,
-                "user_id": None,
-                "first": "Rohan",
-                "last": "Verma",
-                "email": "rohan.verma@example.com",
-                "phone": "+91 9811223344",
-                "skills": '["Talent Acquisition", "Recruitment", "Employee Relations", "Onboarding"]',
-                "matching": '["Talent Acquisition", "Recruitment", "Employee Relations"]',
-                "missing": '["Payroll Processing", "HR Policies"]',
-                "score": 76.0,
-                "exp": 2.5,
-                "education": "MBA in Human Resource Management",
-                "roles": '["HR Executive", "Recruitment Specialist"]',
-                "dept": "Human Resources",
-                "summary": "Solid recruitment profile with strong talent acquisition skills.",
-                "status": CandidateStatus.APPLIED
-            }
-        ]
+        seed_candidates_if_missing(db)
 
-        uploads_resume_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads", "resumes")
-        os.makedirs(uploads_resume_dir, exist_ok=True)
-
-        for cd in candidates_data:
-            # Generate sample resume document
-            ext = ".docx" if cd["first"] == "Rohan" else ".pdf"
-            sample_filename = f"{cd['first']}_{cd['last']}_Resume{ext}"
-            sample_storage_path = os.path.join(uploads_resume_dir, sample_filename)
-            sample_content = f"Mock {ext.upper()} resume document for candidate {cd['first']} {cd['last']}. Qualifications: {cd['education']}. Experience: {cd['exp']} years.".encode("utf-8")
-            if ext == ".pdf":
-                sample_content = b"%PDF-1.4\n" + sample_content
-
-            with open(sample_storage_path, "wb") as f:
-                f.write(sample_content)
-
-            mime = "application/vnd.openxmlformats-officedocument.wordprocessingml.document" if ext == ".docx" else "application/pdf"
-
-            c = Candidate(
-                job_id=cd["job_id"],
-                user_id=cd["user_id"],
-                first_name=cd["first"],
-                last_name=cd["last"],
-                email=cd["email"],
-                phone=cd["phone"],
-                original_resume_filename=sample_filename,
-                original_resume_storage_path=sample_storage_path,
-                original_resume_mime_type=mime,
-                original_resume_size=len(sample_content),
-                uploaded_at=datetime.now(timezone.utc) - timedelta(days=2),
-                resume_url=f"/uploads/resumes/{sample_filename}",
-                extracted_skills=cd["skills"],
-                matching_skills=cd["matching"],
-                missing_skills=cd["missing"],
-                match_score=cd["score"],
-                experience_years=cd["exp"],
-                education=cd["education"],
-                previous_roles=cd["roles"],
-                suggested_department=cd["dept"],
-                ai_summary=cd["summary"],
-                status=cd["status"]
-            )
-            db.add(c)
-        db.commit()
 
         # 10. Sample Payroll Generation for Previous Month
         last_month = today.month - 1 if today.month > 1 else 12

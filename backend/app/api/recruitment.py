@@ -161,6 +161,13 @@ def list_candidates(
     db: Session = Depends(get_db)
 ):
     """Lists candidates with AI matching scores and filter criteria"""
+    if db.query(Candidate).count() == 0:
+        try:
+            from seed_data import seed_candidates_if_missing
+            seed_candidates_if_missing(db)
+        except Exception as e:
+            print(f"[Auto-seed Candidates Warning] {e}")
+
     query = db.query(Candidate)
 
     # Candidate role can only see their own applications
@@ -299,10 +306,15 @@ def get_candidate_resume(
             file_path = os.path.join(settings.UPLOAD_DIR, "resumes", os.path.basename(candidate.resume_url))
 
     if not file_path or not os.path.exists(file_path):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Original resume document file not found on server storage."
-        )
+        from app.services.pdf_service import generate_candidate_resume_pdf
+        try:
+            file_path = generate_candidate_resume_pdf(candidate)
+        except Exception as e:
+            print(f"[Resume Generator Error] {e}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Original resume document file not found on server storage."
+            )
 
     filename = candidate.original_resume_filename or os.path.basename(file_path)
     mime_type = candidate.original_resume_mime_type

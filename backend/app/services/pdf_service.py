@@ -205,3 +205,104 @@ def generate_payslip_pdf(payroll_item, payroll, employee) -> str:
 
     doc.build(story)
     return filepath
+
+
+def generate_candidate_resume_pdf(candidate) -> str:
+    """Generates a professional candidate resume PDF using ReportLab if file on disk is missing"""
+    filename = f"{candidate.first_name}_{candidate.last_name}_Resume.pdf"
+    output_dir = os.path.join(settings.UPLOAD_DIR, "resumes")
+    os.makedirs(output_dir, exist_ok=True)
+    filepath = os.path.join(output_dir, filename)
+
+    doc = SimpleDocTemplate(
+        filepath,
+        pagesize=letter,
+        rightMargin=36,
+        leftMargin=36,
+        topMargin=36,
+        bottomMargin=36
+    )
+
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle(
+        'CandidateName',
+        parent=styles['Heading1'],
+        fontName='Helvetica-Bold',
+        fontSize=20,
+        leading=24,
+        textColor=colors.HexColor('#1E293B'),
+        alignment=0
+    )
+    contact_style = ParagraphStyle(
+        'CandidateContact',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=10,
+        leading=14,
+        textColor=colors.HexColor('#64748B'),
+        alignment=0
+    )
+    section_style = ParagraphStyle(
+        'SectionHeader',
+        parent=styles['Heading2'],
+        fontName='Helvetica-Bold',
+        fontSize=13,
+        leading=17,
+        textColor=colors.HexColor('#0F172A'),
+        spaceBefore=12,
+        spaceAfter=4
+    )
+    body_style = ParagraphStyle(
+        'BodyText',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=10,
+        leading=14,
+        textColor=colors.HexColor('#334155')
+    )
+
+    story = []
+    # Header
+    story.append(Paragraph(f"<b>{candidate.first_name} {candidate.last_name}</b>", title_style))
+    contact_info = f"Email: {candidate.email} | Phone: {candidate.phone or 'N/A'}"
+    if candidate.suggested_department:
+        contact_info += f" | Department: {candidate.suggested_department}"
+    story.append(Paragraph(contact_info, contact_style))
+    story.append(Spacer(1, 10))
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#CBD5E1'), spaceBefore=4, spaceAfter=10))
+
+    # Executive Summary / AI Profile
+    if candidate.ai_summary:
+        story.append(Paragraph("<b>PROFESSIONAL SUMMARY</b>", section_style))
+        story.append(Paragraph(candidate.ai_summary, body_style))
+        story.append(Spacer(1, 10))
+
+    # Education & Experience
+    story.append(Paragraph("<b>EDUCATION & EXPERIENCE</b>", section_style))
+    edu_text = candidate.education or "Undergraduate / Graduate Degree"
+    exp_text = f"{candidate.experience_years} years of professional industry experience"
+    story.append(Paragraph(f"• <b>Education:</b> {edu_text}", body_style))
+    story.append(Paragraph(f"• <b>Experience:</b> {exp_text}", body_style))
+    story.append(Spacer(1, 10))
+
+    # Extracted Skills
+    skills_list = []
+    if candidate.extracted_skills:
+        try:
+            import json
+            skills = json.loads(candidate.extracted_skills) if isinstance(candidate.extracted_skills, str) else candidate.extracted_skills
+            if isinstance(skills, list):
+                skills_list = skills
+        except Exception:
+            pass
+    if skills_list:
+        story.append(Paragraph("<b>TECHNICAL & PROFESSIONAL SKILLS</b>", section_style))
+        story.append(Paragraph(", ".join(skills_list), body_style))
+        story.append(Spacer(1, 10))
+
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#E2E8F0'), spaceBefore=15, spaceAfter=8))
+    story.append(Paragraph("<i>Candidate Profile Document verified via AI-HRMS Talent Acquisition Engine.</i>", contact_style))
+
+    doc.build(story)
+    return filepath

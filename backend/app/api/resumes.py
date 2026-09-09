@@ -52,6 +52,7 @@ async def upload_and_scan_resume(
     # Save to disk with safe unique filename
     safe_filename = f"{uuid.uuid4().hex}_{os.path.basename(filename)}"
     save_path = os.path.join(settings.UPLOAD_DIR, "resumes", safe_filename)
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
     with open(save_path, "wb") as f:
         f.write(contents)
 

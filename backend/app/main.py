@@ -63,11 +63,15 @@ async def lifespan(app: FastAPI):
     if os.environ.get("VERCEL"):
         try:
             from app.models.user import User
+            from app.models.recruitment import Candidate
             from app.core.database import SessionLocal
             db = SessionLocal()
             if not db.query(User).filter(User.email == "admin@hrms.local").first():
                 from seed_data import seed_database
                 seed_database()
+            elif db.query(Candidate).count() == 0:
+                from seed_data import seed_candidates_if_missing
+                seed_candidates_if_missing(db)
             db.close()
         except Exception as e:
             print(f"[Vercel Seed Warning] {e}")
