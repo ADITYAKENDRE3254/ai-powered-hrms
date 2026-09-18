@@ -3,30 +3,35 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.pool import QueuePool
 from app.core.config import settings
 
+# Normalize PostgreSQL URL if provided with legacy postgres:// prefix
+db_url = settings.DATABASE_URL
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
 # Configure database connection based on URL
 connect_args = {}
 pool_config = {}
 
-if settings.DATABASE_URL.startswith("sqlite"):
+if db_url.startswith("sqlite"):
     # SQLite: zero-config local development and testing
     connect_args = {"check_same_thread": False}
     engine = create_engine(
-        settings.DATABASE_URL,
+        db_url,
         connect_args=connect_args
     )
 else:
-    # PostgreSQL: production-grade connection pooling with fallback
+    # PostgreSQL / Supabase: production-grade connection pooling
     try:
-        connect_args = {"connect_timeout": 10}
+        connect_args = {"connect_timeout": 15}
         pool_config = {
             "poolclass": QueuePool,
             "pool_size": 10,
             "max_overflow": 20,
-            "pool_recycle": 3600,  # Recycle connections after 1 hour
-            "pool_pre_ping": True,  # Verify connection before using
+            "pool_recycle": 300,  # Recycle connections every 5 mins for serverless/Supabase poolers
+            "pool_pre_ping": True,  # Verify live connection before executing queries
         }
         engine = create_engine(
-            settings.DATABASE_URL,
+            db_url,
             connect_args=connect_args,
             **pool_config
         )
