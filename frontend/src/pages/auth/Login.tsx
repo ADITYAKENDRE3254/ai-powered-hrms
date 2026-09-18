@@ -49,7 +49,7 @@ export const Login: React.FC = () => {
     setErrorMsg(null);
 
     try {
-      await login(email.trim(), password);
+      await login(email.trim(), password.trim());
       const savedUserStr = localStorage.getItem('user');
       const savedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
       const role = savedUser?.role;

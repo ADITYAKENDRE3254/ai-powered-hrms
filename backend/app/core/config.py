@@ -11,11 +11,11 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
 
-    # Database - Supabase PostgreSQL Cloud Database (Permanent Production)
-    # Default connection string for Supabase project ukfohyrxgeebucgveawa
+    # Database - Supabase PostgreSQL Cloud Database (Permanent Production IPv4 Pooler)
+    # Default connection string for Supabase project ukfohyrxgeebucgveawa (ap-south-1 pooler)
     DATABASE_URL: str = os.environ.get(
         "DATABASE_URL",
-        "postgresql://postgres:AIHRMS%223254@db.ukfohyrxgeebucgveawa.supabase.co:5432/postgres"
+        "postgresql://postgres.ukfohyrxgeebucgveawa:AIHRMS%223254@aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require"
     )
 
     # JWT

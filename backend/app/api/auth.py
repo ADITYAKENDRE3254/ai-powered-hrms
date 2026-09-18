@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import verify_password, create_access_token, get_password_hash
@@ -13,8 +14,10 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 @router.post("/login", response_model=TokenResponse)
 def login(request: Request, login_data: LoginRequest, db: Session = Depends(get_db)):
     """Authenticates user credentials and issues a signed JWT access token"""
-    user = db.query(User).filter(User.email == login_data.email).first()
-    if not user or not verify_password(login_data.password, user.hashed_password):
+    clean_email = login_data.email.strip().lower()
+    clean_password = login_data.password.strip()
+    user = db.query(User).filter(func.lower(User.email) == clean_email).first()
+    if not user or not verify_password(clean_password, user.hashed_password):
         log_audit(
             db=db,
             action="LOGIN_FAILED",

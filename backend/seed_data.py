@@ -171,9 +171,9 @@ def seed_database(reset: bool = False):
 
         # 2. Create User Accounts
         users_data = [
-            ("aditya@ai-hrms.com", "Aditya#SuperAdmin2026!", UserRole.SUPER_ADMIN),
-            ("bhuvnesh@ai-hrms.com", "Bhuvnesh#SuperAdmin2026!", UserRole.SUPER_ADMIN),
-            ("manthan@ai-hrms.com", "Manthan#SuperAdmin2026!", UserRole.SUPER_ADMIN),
+            ("aditya@ai-hrms.com", "Aditya@123", UserRole.SUPER_ADMIN),
+            ("bhuvnesh@ai-hrms.com", "Bhuvnesh@123", UserRole.SUPER_ADMIN),
+            ("manthan@ai-hrms.com", "Manthan@123", UserRole.SUPER_ADMIN),
             ("admin@hrms.local", "Admin@123", UserRole.SUPER_ADMIN),
             ("hr@hrms.local", "Hr@123", UserRole.HR_MANAGER),
             ("deptmanager@hrms.local", "Manager@123", UserRole.DEPARTMENT_MANAGER),
