@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { recruitmentService } from '../../services/recruitment.service';
 import { Job, Candidate } from '../../types';
 import { Badge } from '../../components/common/Badge';
@@ -6,9 +8,12 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { CardSkeleton } from '../../components/common/LoadingSkeleton';
 import { ResumeUploadModal } from '../../components/recruitment/ResumeUploadModal';
 import { CandidateProfileModal } from '../../components/recruitment/CandidateProfileModal';
-import { Briefcase, MapPin, DollarSign, UploadCloud, CheckCircle2, Search, Sparkles, FileText, Download, Eye } from 'lucide-react';
+import { Briefcase, MapPin, DollarSign, UploadCloud, CheckCircle2, Search, Sparkles, FileText, Download, Eye, LogIn, ArrowRight } from 'lucide-react';
 
 export const CandidatePortal: React.FC = () => {
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+
   const [jobs, setJobs] = useState<Job[]>([]);
   const [myApplications, setMyApplications] = useState<Candidate[]>([]);
   const [search, setSearch] = useState('');
@@ -16,16 +21,22 @@ export const CandidatePortal: React.FC = () => {
   const [selectedAppForProfile, setSelectedAppForProfile] = useState<Candidate | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [justAppliedSuccess, setJustAppliedSuccess] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [jList, cList] = await Promise.all([
-        recruitmentService.getJobs('OPEN'),
-        recruitmentService.getCandidates(),
-      ]);
+      const jList = await recruitmentService.getJobs('OPEN');
       setJobs(jList);
-      setMyApplications(cList);
+
+      if (isAuthenticated) {
+        try {
+          const cList = await recruitmentService.getCandidates();
+          setMyApplications(cList);
+        } catch {
+          // ignore for non-HR or restricted
+        }
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -35,7 +46,36 @@ export const CandidatePortal: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [isAuthenticated]);
+
+  const handleUploadSuccess = (result?: any) => {
+    if (result && result.candidate_id) {
+      const newCand: Candidate = {
+        id: result.candidate_id,
+        job_id: selectedJobForApply ? selectedJobForApply.id : 0,
+        first_name: result.candidate_name?.split(' ')[0] || 'Applicant',
+        last_name: result.candidate_name?.split(' ').slice(1).join(' ') || '',
+        email: result.email || '',
+        phone: result.phone || '',
+        resume_url: result.resume_url || '',
+        original_resume_filename: result.original_resume_filename || 'Resume',
+        extracted_skills: Array.isArray(result.skills) ? result.skills.join(', ') : result.skills || '',
+        experience_years: result.experience_years || 0,
+        education: result.education || '',
+        match_score: result.match_score || 0,
+        matching_skills: Array.isArray(result.matching_skills) ? result.matching_skills.join(', ') : result.matching_skills || '',
+        missing_skills: Array.isArray(result.missing_skills) ? result.missing_skills.join(', ') : result.missing_skills || '',
+        suggested_department: result.suggested_department || 'General',
+        ai_summary: result.ai_summary || '',
+        status: (result.status || 'AI_SCREENED') as any,
+        created_at: result.uploaded_at || new Date().toISOString(),
+        job_title: selectedJobForApply ? selectedJobForApply.title : 'General Application'
+      };
+      setMyApplications(prev => [newCand, ...prev]);
+      setJustAppliedSuccess(`Application submitted successfully for ${newCand.first_name}! AI match score: ${newCand.match_score}%`);
+    }
+    loadData();
+  };
 
   const filteredJobs = jobs.filter(
     (j) =>
@@ -44,25 +84,90 @@ export const CandidatePortal: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
-      {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-navy-950 via-slate-900 to-navy-950 border border-navy-800/80 p-6 sm:p-8 text-white shadow-2xl">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-brand-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 right-1/4 w-60 h-60 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+    <div className={!isAuthenticated ? "min-h-screen bg-[#FAFAFC] dark:bg-navy-950 font-sans text-slate-900 dark:text-slate-100" : "space-y-6"}>
+      {/* Public Top Navbar if not logged in */}
+      {!isAuthenticated && (
+        <header className="sticky top-0 z-30 bg-white/80 dark:bg-navy-900/80 backdrop-blur-md border-b border-slate-200/80 dark:border-navy-800 px-6 py-4 mb-6">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 via-cyan-500 to-purple-600 flex items-center justify-center text-white shadow-apple-sm">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight">AI-HRMS Careers</h1>
+                <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 tracking-wider uppercase">Public Talent Portal</span>
+              </div>
+            </div>
 
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-950/80 border border-brand-500/30 text-cyan-300 text-xs font-semibold mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Careers & Talent Community</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setSelectedJobForApply(null);
+                  setShowApplyModal(true);
+                }}
+                className="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl shadow-apple-sm transition-all flex items-center gap-1.5"
+              >
+                <UploadCloud className="w-4 h-4" />
+                <span>Upload Resume</span>
+              </button>
+
+              <button
+                onClick={() => navigate('/login')}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-navy-800 dark:hover:bg-navy-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-navy-700 transition-all flex items-center gap-1.5"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Employee Login</span>
+              </button>
+            </div>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Explore Opportunities at AI-HRMS
-          </h1>
-          <p className="text-slate-400 text-xs sm:text-sm mt-1 max-w-xl leading-relaxed">
-            Apply with your PDF or DOCX resume. Our automated AI parser matches your skillset with open vacancies in real time.
-          </p>
+        </header>
+      )}
+
+      <div className={!isAuthenticated ? "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 space-y-6" : "space-y-6"}>
+        {/* Just Applied Alert */}
+        {justAppliedSuccess && (
+          <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs font-bold flex items-center justify-between shadow-apple-sm">
+            <div className="flex items-center gap-2.5">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span>{justAppliedSuccess}</span>
+            </div>
+            <button onClick={() => setJustAppliedSuccess(null)} className="text-emerald-600 hover:underline">Dismiss</button>
+          </div>
+        )}
+
+        {/* Header Banner */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-navy-950 via-slate-900 to-navy-950 border border-navy-800/80 p-6 sm:p-8 text-white shadow-2xl">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-brand-600/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-1/4 w-60 h-60 bg-purple-600/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="max-w-xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-950/80 border border-brand-500/30 text-cyan-300 text-xs font-semibold mb-3">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Autonomous AI Talent Pipeline • No Login Required</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                Explore Opportunities at AI-HRMS
+              </h1>
+              <p className="text-slate-400 text-xs sm:text-sm mt-1 leading-relaxed">
+                Upload your PDF or Word resume directly. Our automated AI parser matches your competencies with current vacancies in real time.
+              </p>
+            </div>
+
+            <div className="shrink-0 flex items-center gap-3">
+              <button
+                onClick={() => {
+                  setSelectedJobForApply(null);
+                  setShowApplyModal(true);
+                }}
+                className="px-5 py-3.5 bg-gradient-to-r from-brand-600 via-cyan-600 to-blue-600 hover:from-brand-500 hover:to-blue-500 text-white text-xs font-extrabold rounded-2xl shadow-apple shadow-brand-600/30 transition-all hover:scale-105 flex items-center gap-2"
+              >
+                <UploadCloud className="w-4 h-4" />
+                <span>Upload Resume & AI Match</span>
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
 
       {/* My Submitted Applications */}
       {myApplications.length > 0 && (
@@ -230,7 +335,7 @@ export const CandidatePortal: React.FC = () => {
           isOpen={showApplyModal}
           onClose={() => setShowApplyModal(false)}
           jobs={selectedJobForApply ? [selectedJobForApply] : jobs}
-          onUploadSuccess={loadData}
+          onUploadSuccess={handleUploadSuccess}
         />
       )}
 
@@ -243,6 +348,7 @@ export const CandidatePortal: React.FC = () => {
           onStatusUpdated={loadData}
         />
       )}
+      </div>
     </div>
   );
 };

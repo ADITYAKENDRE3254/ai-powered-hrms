@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.deps import get_current_user, require_roles
+from app.core.deps import get_current_user, get_current_user_optional, require_roles
 from app.models.user import User, UserRole
 from app.models.department import Department
 from app.models.recruitment import Job, Candidate, JobStatus, CandidateStatus
@@ -23,14 +23,14 @@ router = APIRouter(prefix="/recruitment", tags=["Recruitment"])
 def list_jobs(
     status: Optional[JobStatus] = None,
     department_id: Optional[int] = None,
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
-    """Lists job postings with applicant count"""
+    """Lists job postings with applicant count (Publicly accessible for open positions)"""
     query = db.query(Job)
 
-    # Candidates or unauthenticated users can only see OPEN jobs
-    if current_user.role == UserRole.CANDIDATE:
+    # Candidates or unauthenticated public visitors only see OPEN jobs
+    if not current_user or current_user.role == UserRole.CANDIDATE:
         query = query.filter(Job.status == JobStatus.OPEN)
     elif status:
         query = query.filter(Job.status == status)

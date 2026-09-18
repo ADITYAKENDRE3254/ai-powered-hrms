@@ -118,7 +118,7 @@ const RootRedirector: React.FC = () => {
     case 'EMPLOYEE':
       return <Navigate to="/employee/dashboard" replace />;
     case 'CANDIDATE':
-      return <Navigate to="/candidate/portal" replace />;
+      return <Navigate to="/careers" replace />;
     default:
       return <Navigate to="/login" replace />;
   }
@@ -132,11 +132,14 @@ export const App: React.FC = () => {
           <BrowserRouter>
             <Suspense fallback={<PageLoader />}>
               <Routes>
-              {/* Public Auth Route */}
-            <Route path="/login" element={<Login />} />
+              {/* Public Auth & Candidate Application Routes (No Login Required) */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/careers" element={<CandidatePortal />} />
+              <Route path="/apply" element={<CandidatePortal />} />
+              <Route path="/candidate/portal" element={<CandidatePortal />} />
 
-            {/* Root Intelligent Navigation */}
-            <Route path="/" element={<RootRedirector />} />
+              {/* Root Intelligent Navigation */}
+              <Route path="/" element={<RootRedirector />} />
 
             {/* Role Dashboards */}
             <Route
@@ -200,17 +203,6 @@ export const App: React.FC = () => {
                 <ProtectedRoute allowedRoles={['EMPLOYEE']}>
                   <AppLayout pageTitle="Employee Workspace" pageSubtitle="Live GPS attendance, leave balances & payslips">
                     <EmployeeDashboard />
-                  </AppLayout>
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/candidate/portal"
-              element={
-                <ProtectedRoute allowedRoles={['CANDIDATE', 'SUPER_ADMIN', 'HR_MANAGER', 'RECRUITER']}>
-                  <AppLayout pageTitle="Careers & Candidate Portal" pageSubtitle="Search open positions and apply with your resume">
-                    <CandidatePortal />
                   </AppLayout>
                 </ProtectedRoute>
               }

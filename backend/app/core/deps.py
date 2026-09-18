@@ -8,6 +8,7 @@ from app.models.user import User, UserRole
 from app.models.employee import Employee
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     credentials_exception = HTTPException(
@@ -32,6 +33,22 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
             detail="Inactive user account"
         )
     return user
+
+def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme_optional), db: Session = Depends(get_db)) -> Optional[User]:
+    """Returns authenticated user if a valid bearer token is present; otherwise returns None without raising 401"""
+    if not token:
+        return None
+    payload = decode_token(token)
+    if not payload:
+        return None
+    user_id = payload.get("sub")
+    if not user_id:
+        return None
+    try:
+        user = db.query(User).filter(User.id == int(user_id)).first()
+        return user if (user and user.is_active) else None
+    except Exception:
+        return None
 
 def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
     if not current_user.is_active:

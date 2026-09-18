@@ -8,7 +8,7 @@ interface ResumeUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   jobs: Job[];
-  onUploadSuccess?: () => void;
+  onUploadSuccess?: (result?: any) => void;
 }
 
 export const ResumeUploadModal: React.FC<ResumeUploadModalProps> = ({
@@ -19,6 +19,10 @@ export const ResumeUploadModal: React.FC<ResumeUploadModalProps> = ({
 }) => {
   const [selectedJobId, setSelectedJobId] = useState<string>(jobs.length > 0 ? String(jobs[0].id) : '');
   const [file, setFile] = useState<File | null>(null);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [scanResult, setScanResult] = useState<any | null>(null);
@@ -53,11 +57,15 @@ export const ResumeUploadModal: React.FC<ResumeUploadModalProps> = ({
     if (selectedJobId) {
       formData.append('job_id', selectedJobId);
     }
+    if (firstName.trim()) formData.append('first_name', firstName.trim());
+    if (lastName.trim()) formData.append('last_name', lastName.trim());
+    if (email.trim()) formData.append('email', email.trim());
+    if (phone.trim()) formData.append('phone', phone.trim());
 
     try {
       const data = await recruitmentService.uploadResume(formData);
       setScanResult(data);
-      if (onUploadSuccess) onUploadSuccess();
+      if (onUploadSuccess) onUploadSuccess(data);
     } catch (err: any) {
       setErrorMsg(err.response?.data?.detail || err.message || 'Failed to upload and scan resume');
     } finally {
@@ -98,13 +106,41 @@ export const ResumeUploadModal: React.FC<ResumeUploadModalProps> = ({
               onChange={(e) => setSelectedJobId(e.target.value)}
               className="w-full text-xs px-3.5 py-2.5 bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-700 text-slate-900 dark:text-white rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
             >
-              <option value="">General Resume Ingestion (No specific job)</option>
+              <option value="">General Application (AI will match best role)</option>
               {jobs.map((j) => (
                 <option key={j.id} value={j.id}>
                   {j.title} ({j.department_name || 'All Departments'})
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Optional Direct Contact Details */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                Full Name (Optional - AI auto-extracts)
+              </label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="e.g. John Doe"
+                className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
+                Email Address (Optional)
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="e.g. john@example.com"
+                className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-navy-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+            </div>
           </div>
 
           {/* Drag & Drop Area */}

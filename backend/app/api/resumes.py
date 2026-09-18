@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user_optional
 from app.models.user import User, UserRole
 from app.models.recruitment import Job, Candidate, CandidateStatus
 from app.schemas.ai import ResumeAnalysisResponse, CandidateMatchResponse
@@ -28,7 +28,7 @@ async def upload_and_scan_resume(
     last_name: Optional[str] = Form(None),
     email: Optional[str] = Form(None),
     phone: Optional[str] = Form(None),
-    current_user: Optional[User] = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     """Uploads resume, extracts text, identifies skills, computes candidate match %, and creates candidate application"""

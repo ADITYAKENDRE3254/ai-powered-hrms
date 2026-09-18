@@ -34,7 +34,6 @@ export const Login: React.FC = () => {
     { role: 'TEAM_LEADER', label: 'Team Leader', email: 'teamlead@hrms.local', pwd: 'Leader@123', badge: 'Sprint Team' },
     { role: 'RECRUITER', label: 'Recruiter', email: 'recruiter@hrms.local', pwd: 'Recruiter@123', badge: 'Talent Acquisition' },
     { role: 'EMPLOYEE', label: 'Employee', email: 'employee@hrms.local', pwd: 'Employee@123', badge: 'Staff Member' },
-    { role: 'CANDIDATE', label: 'Candidate', email: 'candidate@hrms.local', pwd: 'Candidate@123', badge: 'Applicant' },
   ];
 
   const handleSelectDemo = (dEmail: string, dPwd: string) => {
@@ -184,7 +183,7 @@ export const Login: React.FC = () => {
             <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">1-Click Auto-Fill</span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {demoAccounts.map((d) => {
               const isSelected = email === d.email;
               return (
@@ -204,6 +203,32 @@ export const Login: React.FC = () => {
               );
             })}
           </div>
+        </div>
+
+        {/* Public Applicant Direct Apply Banner */}
+        <div className="mb-7 p-4.5 rounded-3xl bg-gradient-to-r from-cyan-500/10 via-brand-500/10 to-purple-500/10 border border-brand-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-apple-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-cyan-500 flex items-center justify-center text-white shrink-0 shadow-apple-sm">
+              <Briefcase className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <span>Looking for Jobs or Uploading Resume?</span>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">No Login Required</span>
+              </p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                New employees & applicants can submit resumes and browse vacancies directly.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/careers')}
+            className="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-apple-sm transition-all hover:scale-105 shrink-0 flex items-center justify-center gap-1.5"
+          >
+            <span>Browse & Apply</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         {errorMsg && (
