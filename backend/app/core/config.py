@@ -11,10 +11,12 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
 
-    # Database - Default to SQLite (dev/zero-config), override with PostgreSQL via DATABASE_URL in .env (production)
-    # For PostgreSQL: postgresql://user:password@localhost:5432/ai_hrms_db
-    # For SQLite: sqlite:///./hrms.db (or sqlite:////tmp/hrms.db on Vercel)
-    DATABASE_URL: str = "sqlite:////tmp/hrms.db" if IS_VERCEL else "sqlite:///./hrms.db"
+    # Database - Supabase PostgreSQL Cloud Database (Permanent Production)
+    # Default connection string for Supabase project ukfohyrxgeebucgveawa
+    DATABASE_URL: str = os.environ.get(
+        "DATABASE_URL",
+        "postgresql://postgres:AIHRMS%223254@db.ukfohyrxgeebucgveawa.supabase.co:5432/postgres"
+    )
 
     # JWT
     JWT_SECRET_KEY: str = "super_secret_jwt_key_ai_hrms_2026_production_grade_token_signature_99182"
