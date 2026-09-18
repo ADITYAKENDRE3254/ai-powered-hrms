@@ -171,6 +171,9 @@ def seed_database(reset: bool = False):
 
         # 2. Create User Accounts
         users_data = [
+            ("aditya@ai-hrms.com", "Aditya#SuperAdmin2026!", UserRole.SUPER_ADMIN),
+            ("bhuvnesh@ai-hrms.com", "Bhuvnesh#SuperAdmin2026!", UserRole.SUPER_ADMIN),
+            ("manthan@ai-hrms.com", "Manthan#SuperAdmin2026!", UserRole.SUPER_ADMIN),
             ("admin@hrms.local", "Admin@123", UserRole.SUPER_ADMIN),
             ("hr@hrms.local", "Hr@123", UserRole.HR_MANAGER),
             ("deptmanager@hrms.local", "Manager@123", UserRole.DEPARTMENT_MANAGER),
@@ -235,7 +238,56 @@ def seed_database(reset: bool = False):
 
         # 5. Create Employees
         employees_data = [
-            # Super Admin / Executive
+            # Executive Private Super Admins
+            {
+                "user_id": users["aditya@ai-hrms.com"].id,
+                "code": "SA-001",
+                "first_name": "Aditya",
+                "last_name": "Kendre",
+                "email": "aditya@ai-hrms.com",
+                "phone": "+91 98765 43201",
+                "gender": Gender.MALE,
+                "dob": date(1995, 5, 20),
+                "designation": "Super Administrator & Executive Leader",
+                "dept_id": depts["ENG"].id,
+                "team_id": teams["Backend Architecture Team"].id,
+                "salary": 250000.0,
+                "allowances": 25000.0,
+                "joining": date(2020, 1, 1)
+            },
+            {
+                "user_id": users["bhuvnesh@ai-hrms.com"].id,
+                "code": "SA-002",
+                "first_name": "Bhuvnesh",
+                "last_name": "Admin",
+                "email": "bhuvnesh@ai-hrms.com",
+                "phone": "+91 98765 43202",
+                "gender": Gender.MALE,
+                "dob": date(1995, 8, 15),
+                "designation": "Super Administrator & Executive Leader",
+                "dept_id": depts["ENG"].id,
+                "team_id": teams["Backend Architecture Team"].id,
+                "salary": 250000.0,
+                "allowances": 25000.0,
+                "joining": date(2020, 1, 1)
+            },
+            {
+                "user_id": users["manthan@ai-hrms.com"].id,
+                "code": "SA-003",
+                "first_name": "Manthan",
+                "last_name": "Admin",
+                "email": "manthan@ai-hrms.com",
+                "phone": "+91 98765 43203",
+                "gender": Gender.MALE,
+                "dob": date(1995, 11, 10),
+                "designation": "Super Administrator & Executive Leader",
+                "dept_id": depts["ENG"].id,
+                "team_id": teams["Backend Architecture Team"].id,
+                "salary": 250000.0,
+                "allowances": 25000.0,
+                "joining": date(2020, 1, 1)
+            },
+            # Demo Super Admin / Executive
             {
                 "user_id": users["admin@hrms.local"].id,
                 "code": "EMP-1000",
