@@ -1,6 +1,6 @@
 import io
 import csv
-from datetime import date, datetime
+from datetime import date, datetime, timezone, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
@@ -156,6 +156,17 @@ def get_dashboard_summary(
 
 # ----------------- CSV EXPORT ENDPOINTS -----------------
 
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def format_dt_ist(dt: Optional[datetime]) -> str:
+    if not dt:
+        return ""
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc).astimezone(IST)
+    else:
+        dt = dt.astimezone(IST)
+    return dt.strftime("%Y-%m-%d %I:%M:%S %p IST")
+
 @router.get("/attendance/export")
 def export_attendance_csv(
     current_user: User = Depends(require_roles(UserRole.SUPER_ADMIN, UserRole.HR_MANAGER, UserRole.DEPARTMENT_MANAGER)),
@@ -175,8 +186,8 @@ def export_attendance_csv(
         dept = emp.department.name if (emp and emp.department) else "N/A"
         writer.writerow([
             a.id, code, name, dept, a.date,
-            a.punch_in.strftime("%Y-%m-%d %H:%M:%S") if a.punch_in else "",
-            a.punch_out.strftime("%Y-%m-%d %H:%M:%S") if a.punch_out else "",
+            format_dt_ist(a.punch_in),
+            format_dt_ist(a.punch_out),
             f"{a.distance_in_meters:.1f}" if a.distance_in_meters is not None else "",
             a.verification_status.value if hasattr(a.verification_status, 'value') else str(a.verification_status),
             a.work_duration_hours

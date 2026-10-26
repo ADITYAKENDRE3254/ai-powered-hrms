@@ -164,15 +164,13 @@ export const EmployeeDashboard: React.FC<{ onOpenAIChat?: () => void }> = ({ onO
             >
               View Breakdown
             </button>
-            <a
-              href={payrollService.getPayslipDownloadUrl(latestPayroll.id)}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              onClick={() => payrollService.downloadPayslipPdf(latestPayroll.id)}
               className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-sm shadow-brand-600/20 transition-colors flex items-center gap-1.5"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download PDF</span>
-            </a>
+            </button>
           </div>
         </div>
       )}
