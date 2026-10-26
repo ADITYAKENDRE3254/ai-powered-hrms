@@ -29,6 +29,39 @@ def create_leave_request(
     """Creates a leave request and applies the multi-tier approval workflow"""
     duration = calculate_duration_days(start_date, end_date)
 
+    # ── CASUAL LEAVE CAP: Maximum 8 casual leave days per year ──────────────
+    CASUAL_LEAVE_MAX_DAYS = 8
+    if leave_type == LeaveType.CASUAL:
+        # Count all approved + pending casual leave days this year to prevent gaming
+        current_year = start_date.year
+        used_casual = db.query(LeaveRequest).filter(
+            LeaveRequest.employee_id == employee.id,
+            LeaveRequest.leave_type == LeaveType.CASUAL,
+            LeaveRequest.status.in_([
+                LeaveStatus.APPROVED,
+                LeaveStatus.PENDING_TL,
+                LeaveStatus.PENDING_MANAGER
+            ]),
+            LeaveRequest.start_date >= date(current_year, 1, 1),
+            LeaveRequest.end_date <= date(current_year, 12, 31)
+        ).all()
+
+        used_days = sum(req.duration_days for req in used_casual)
+        remaining = CASUAL_LEAVE_MAX_DAYS - used_days
+
+        if duration > remaining:
+            if remaining <= 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Casual leave limit reached: You have used all {CASUAL_LEAVE_MAX_DAYS} casual leave days allowed this year. Please apply for Sick Leave or Earned Leave instead."
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Casual leave limit exceeded: You can only take {remaining} more casual leave day(s) this year (maximum {CASUAL_LEAVE_MAX_DAYS} days per year). You have used {used_days} day(s) so far."
+                )
+    # ────────────────────────────────────────────────────────────────────────
+
     # Check for overlapping leave requests
     overlapping = db.query(LeaveRequest).filter(
         LeaveRequest.employee_id == employee.id,

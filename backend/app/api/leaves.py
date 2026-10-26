@@ -73,13 +73,13 @@ def get_my_leave_balance(
 ):
     """Returns available leave balances for the logged in employee"""
     if not current_employee:
-        return LeaveBalanceOut(casual_leave=12.0, sick_leave=10.0, earned_leave=15.0, year=2026)
+        return LeaveBalanceOut(casual_leave=8.0, sick_leave=10.0, earned_leave=15.0, year=2026)
 
     balance = db.query(LeaveBalance).filter(LeaveBalance.employee_id == current_employee.id).first()
     if not balance:
         balance = LeaveBalance(
             employee_id=current_employee.id,
-            casual_leave=12.0,
+            casual_leave=8.0,
             sick_leave=10.0,
             earned_leave=15.0,
             year=2026

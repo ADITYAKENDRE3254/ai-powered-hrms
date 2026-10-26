@@ -133,7 +133,7 @@ def get_dashboard_summary(
             "employee_name": f"{current_employee.first_name} {current_employee.last_name}",
             "employee_code": current_employee.employee_code,
             "present_days": present_days,
-            "casual_leave_balance": balance.casual_leave if balance else 12.0,
+            "casual_leave_balance": balance.casual_leave if balance else 8.0,
             "sick_leave_balance": balance.sick_leave if balance else 10.0,
             "earned_leave_balance": balance.earned_leave if balance else 15.0,
             "pending_leaves": pending_leaves,

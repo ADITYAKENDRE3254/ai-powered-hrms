@@ -1,5 +1,5 @@
 import math
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, timedelta
 from typing import Tuple, Optional
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -9,6 +9,17 @@ from app.models.employee import Employee
 from app.models.setting import OfficeSetting
 from app.models.notification import Notification, NotificationType
 from app.services.audit_service import log_audit
+
+# India Standard Time — UTC+5:30
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def now_ist() -> datetime:
+    """Returns the current datetime in IST (India Standard Time, UTC+5:30)"""
+    return datetime.now(IST)
+
+def today_ist() -> date:
+    """Returns today's date in IST (accounts for midnight rollover correctly for Indian employees)"""
+    return now_ist().date()
 
 def calculate_haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculates distance between two GPS coordinates in meters using the Haversine formula"""
@@ -39,7 +50,7 @@ def process_punch_in(
     ip_address: Optional[str] = None
 ) -> Attendance:
     """Processes an employee Punch-In attempt with GPS geofence validation"""
-    today = date.today()
+    today = today_ist()  # IST date — correct midnight rollover for Indian employees
     existing = db.query(Attendance).filter(
         Attendance.employee_id == employee.id,
         Attendance.date == today
@@ -53,7 +64,7 @@ def process_punch_in(
 
     office_lat, office_lng, radius, office_name = get_office_coordinates(db)
     distance = calculate_haversine_distance(latitude, longitude, office_lat, office_lng)
-    now = datetime.now(timezone.utc)
+    now = now_ist()  # IST timestamp for punch-in
 
     if distance > radius:
         # Distance exceeded: Record rejected attempt & notify employee
@@ -144,7 +155,7 @@ def process_punch_out(
     ip_address: Optional[str] = None
 ) -> Attendance:
     """Processes an employee Punch-Out attempt"""
-    today = date.today()
+    today = today_ist()  # IST date
     attendance = db.query(Attendance).filter(
         Attendance.employee_id == employee.id,
         Attendance.date == today
@@ -162,13 +173,14 @@ def process_punch_out(
             detail="Already punched out for today."
         )
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()  # IST timestamp for punch-out
     attendance.punch_out = now
     attendance.punch_out_lat = latitude
     attendance.punch_out_lng = longitude
     
-    # Calculate duration
-    duration_seconds = (now - attendance.punch_in.replace(tzinfo=timezone.utc)).total_seconds()
+    # Calculate duration — compare IST punch-out with stored punch-in (convert to IST if needed)
+    punch_in_aware = attendance.punch_in.replace(tzinfo=IST) if attendance.punch_in.tzinfo is None else attendance.punch_in.astimezone(IST)
+    duration_seconds = (now - punch_in_aware).total_seconds()
     duration_hours = max(0.0, round(duration_seconds / 3600.0, 2))
     attendance.work_duration_hours = duration_hours
     

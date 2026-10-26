@@ -99,20 +99,35 @@ export const LeavesPage: React.FC = () => {
 
       {/* Leave Balances Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white dark:bg-navy-900 p-5 rounded-3xl border border-slate-200/80 dark:border-navy-800 shadow-apple flex items-center justify-between transition-all">
-          <div>
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-              Casual Leave (CL)
-            </span>
-            <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
-              {balance?.casual_leave || 12} Days
-            </p>
-            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5 block">
-              &bull; 1-Day Auto-Approved
-            </span>
+        <div className="bg-white dark:bg-navy-900 p-5 rounded-3xl border border-slate-200/80 dark:border-navy-800 shadow-apple transition-all">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Casual Leave (CL)
+              </span>
+              <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">
+                {balance?.casual_leave ?? 8} Days
+              </p>
+              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5 block">
+                • Max 8 Days / Year
+              </span>
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/60 flex items-center justify-center font-bold text-sm shadow-xs">
+              CL
+            </div>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800/60 flex items-center justify-center font-bold text-sm shadow-xs">
-            CL
+          {/* Usage bar */}
+          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-navy-800">
+            <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1">
+              <span>Used: {Math.max(0, 8 - (balance?.casual_leave ?? 8))} days</span>
+              <span>Remaining: {balance?.casual_leave ?? 8} / 8</span>
+            </div>
+            <div className="w-full bg-slate-100 dark:bg-navy-800 rounded-full h-1.5">
+              <div
+                className="bg-emerald-500 h-1.5 rounded-full transition-all"
+                style={{ width: `${Math.min(100, ((balance?.casual_leave ?? 8) / 8) * 100)}%` }}
+              />
+            </div>
           </div>
         </div>
 
