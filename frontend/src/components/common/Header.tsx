@@ -17,6 +17,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Badge } from './Badge';
+import { liveISTTime, toISTDateTime } from '../../utils/time';
+
 
 interface HeaderProps {
   title: string;
@@ -90,7 +92,8 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="hidden xl:flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 font-medium px-3 py-1.5 bg-slate-100/70 dark:bg-navy-800/70 rounded-xl border border-slate-200/60 dark:border-navy-700/60">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span>
-            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            {liveISTTime(currentTime)}
+
           </span>
         </div>
 
@@ -173,7 +176,7 @@ export const Header: React.FC<HeaderProps> = ({
                           {n.title}
                         </p>
                         <span className="text-[10px] text-slate-400 dark:text-slate-500 shrink-0">
-                          {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {toISTDateTime(n.created_at)}
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{n.message}</p>

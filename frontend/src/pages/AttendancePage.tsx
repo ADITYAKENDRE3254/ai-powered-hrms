@@ -7,6 +7,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { useAuth } from '../context/AuthContext';
 import { Clock, Calendar, MapPin, Download, Filter, Search, UserCheck, ShieldCheck } from 'lucide-react';
 import { reportService } from '../services/report.service';
+import { toISTTime } from '../utils/time';
 
 export const AttendancePage: React.FC = () => {
   const { user, hasRole } = useAuth();
@@ -154,14 +155,10 @@ export const AttendancePage: React.FC = () => {
                       </td>
                     )}
                     <td className="py-4 px-5 text-slate-700 dark:text-slate-300">
-                      {att.punch_in
-                        ? new Date(att.punch_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                        : '-'}
+                      {att.punch_in ? toISTTime(att.punch_in) : '-'}
                     </td>
                     <td className="py-4 px-5 text-slate-700 dark:text-slate-300">
-                      {att.punch_out
-                        ? new Date(att.punch_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                        : '-'}
+                      {att.punch_out ? toISTTime(att.punch_out) : '-'}
                     </td>
                     <td className="py-4 px-5 font-mono text-slate-600 dark:text-slate-400">
                       {att.distance_in_meters !== null && att.distance_in_meters !== undefined
