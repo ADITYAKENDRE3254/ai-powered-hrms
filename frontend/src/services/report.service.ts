@@ -49,7 +49,35 @@ export const reportService = {
 
   getPayrollExportUrl(): string {
     return '/api/reports/payroll/export';
-  }
+  },
+
+  /** Downloads attendance CSV via authenticated Axios request (JWT token in header) */
+  async downloadAttendanceCsv(): Promise<void> {
+    const response = await api.get('/reports/attendance/export', { responseType: 'blob' });
+    const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `attendance_report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
+
+  /** Downloads payroll CSV via authenticated Axios request (JWT token in header) */
+  async downloadPayrollCsv(): Promise<void> {
+    const response = await api.get('/reports/payroll/export', { responseType: 'blob' });
+    const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `payroll_ledger_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  },
 };
 
 export const auditService = {

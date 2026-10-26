@@ -59,15 +59,13 @@ export const AttendancePage: React.FC = () => {
         </div>
 
         {isHRAdmin && (
-          <a
-            href={reportService.getAttendanceExportUrl()}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            onClick={() => reportService.downloadAttendanceCsv()}
             className="px-4 py-2.5 bg-slate-900 dark:bg-navy-800 hover:bg-slate-800 dark:hover:bg-navy-700 text-white rounded-2xl text-xs font-bold shadow-apple border border-slate-700 dark:border-navy-700 transition-all flex items-center gap-2 shrink-0 hover:scale-[1.01] active:scale-[0.99]"
           >
             <Download className="w-4 h-4 text-cyan-400" />
             <span>Export Attendance CSV</span>
-          </a>
+          </button>
         )}
       </div>
 

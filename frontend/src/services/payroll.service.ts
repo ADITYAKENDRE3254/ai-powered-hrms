@@ -1,4 +1,4 @@
-import api, { API_BASE_URL } from './api';
+import api from './api';
 import { Payroll, PayrollItem } from '../types';
 
 export const payrollService = {
@@ -27,7 +27,19 @@ export const payrollService = {
     return response.data;
   },
 
-  getPayslipDownloadUrl(id: number): string {
-    return `${API_BASE_URL}/payslips/${id}/download`;
-  }
+  /** Downloads payslip PDF via authenticated Axios request (JWT token sent in header) */
+  async downloadPayslipPdf(id: number, filename?: string): Promise<void> {
+    const response = await api.get(`/payslips/${id}/download`, {
+      responseType: 'blob',
+    });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.setAttribute('download', filename || `payslip_${id}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+  },
 };

@@ -17,8 +17,6 @@ export const PayslipViewerModal: React.FC<PayslipViewerModalProps> = ({
 }) => {
   if (!item) return null;
 
-  const downloadUrl = payrollService.getPayslipDownloadUrl(item.id);
-
   return (
     <Modal
       isOpen={isOpen}
@@ -34,15 +32,13 @@ export const PayslipViewerModal: React.FC<PayslipViewerModalProps> = ({
             <h4 className="text-base font-black tracking-tight">AI-POWERED HRMS CORPORATION</h4>
             <p className="text-xs text-cyan-300 mt-0.5">Confidential Salary Statement</p>
           </div>
-          <a
-            href={downloadUrl}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            onClick={() => payrollService.downloadPayslipPdf(item.id, `payslip_${item.employee_code}.pdf`)}
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-brand-600 to-cyan-600 hover:from-brand-700 hover:to-cyan-700 text-white rounded-xl text-xs font-bold shadow-apple transition-all"
           >
             <Download className="w-4 h-4" />
             <span>Download PDF</span>
-          </a>
+          </button>
         </div>
 
         {/* Employee Info Grid */}

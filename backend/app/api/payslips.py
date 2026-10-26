@@ -1,6 +1,5 @@
-import os
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
@@ -57,19 +56,24 @@ def download_payslip_pdf(
                 detail="Forbidden: You cannot access or download another employee's payslip."
             )
 
-    # Check / Generate PDF file
+    # Generate PDF bytes in-memory (works on Vercel serverless — no disk writes)
     emp = item.employee
     payroll = item.payroll
     filename = f"payslip_{emp.employee_code}_{payroll.year}_{payroll.month:02d}.pdf"
-    output_dir = os.path.join("./uploads", "payslips")
-    os.makedirs(output_dir, exist_ok=True)
-    filepath = os.path.join(output_dir, filename)
 
-    if not os.path.exists(filepath):
-        filepath = generate_payslip_pdf(item, payroll, emp)
+    try:
+        pdf_bytes = generate_payslip_pdf(item, payroll, emp)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"PDF generation failed: {str(e)}"
+        )
 
-    return FileResponse(
-        path=filepath,
-        filename=filename,
-        media_type="application/pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+        }
     )
+
