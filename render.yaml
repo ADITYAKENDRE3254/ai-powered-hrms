@@ -1,0 +1,37 @@
+services:
+  # Backend FastAPI API Server
+  - type: web
+    name: ai-hrms-backend
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://postgres.ukfohyrxgeebucgveawa:AIHRMS%223254@aws-0-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: PORT
+        value: 10000
+
+  # Frontend Vite React SPA
+  - type: web
+    name: ai-hrms-frontend
+    runtime: static
+    region: oregon
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: ai-hrms-backend
+          property: host
