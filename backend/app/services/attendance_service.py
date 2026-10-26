@@ -64,7 +64,7 @@ def process_punch_in(
 
     office_lat, office_lng, radius, office_name = get_office_coordinates(db)
     distance = calculate_haversine_distance(latitude, longitude, office_lat, office_lng)
-    now = now_ist()  # IST timestamp for punch-in
+    now = datetime.now(timezone.utc)  # Canonical UTC timestamp for DB storage
 
     if distance > radius:
         # Distance exceeded: Record rejected attempt & notify employee
@@ -89,7 +89,7 @@ def process_punch_in(
         notification = Notification(
             user_id=employee.user_id,
             title="Attendance Punch-In Rejected",
-            message=f"Your punch-in attempt at {now.strftime('%H:%M')} was rejected. You are {distance:.1f}m away from '{office_name}' (Geofence limit is {radius:.0f}m).",
+            message=f"Your punch-in attempt at {datetime.now(IST).strftime('%I:%M %p')} was rejected. You are {distance:.1f}m away from '{office_name}' (Geofence limit is {radius:.0f}m).",
             type=NotificationType.ATTENDANCE
         )
         db.add(notification)
@@ -173,14 +173,14 @@ def process_punch_out(
             detail="Already punched out for today."
         )
 
-    now = now_ist()  # IST timestamp for punch-out
+    now = datetime.now(timezone.utc)  # Canonical UTC timestamp for DB storage
     attendance.punch_out = now
     attendance.punch_out_lat = latitude
     attendance.punch_out_lng = longitude
     
-    # Calculate duration — compare IST punch-out with stored punch-in (convert to IST if needed)
-    punch_in_aware = attendance.punch_in.replace(tzinfo=IST) if attendance.punch_in.tzinfo is None else attendance.punch_in.astimezone(IST)
-    duration_seconds = (now - punch_in_aware).total_seconds()
+    # Calculate duration (both in UTC)
+    p_in = attendance.punch_in.replace(tzinfo=timezone.utc) if attendance.punch_in.tzinfo is None else attendance.punch_in.astimezone(timezone.utc)
+    duration_seconds = (now - p_in).total_seconds()
     duration_hours = max(0.0, round(duration_seconds / 3600.0, 2))
     attendance.work_duration_hours = duration_hours
     
