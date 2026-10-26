@@ -6,7 +6,7 @@ if (rawApiUrl && !rawApiUrl.startsWith('http://') && !rawApiUrl.startsWith('http
 }
 export const API_BASE_URL = rawApiUrl
   ? (rawApiUrl.endsWith('/api') ? rawApiUrl : `${rawApiUrl.replace(/\/$/, '')}/api`)
-  : '/api';
+  : 'https://ai-hrms-backend-1tof.onrender.com/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
