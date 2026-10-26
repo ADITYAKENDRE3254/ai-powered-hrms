@@ -60,8 +60,8 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     ensure_schema_compatibility()
 
-    # Auto-seed database if fresh SQLite on Vercel
-    if os.environ.get("VERCEL"):
+    # Auto-seed database if fresh database
+    if True:
         try:
             from app.models.user import User
             from app.models.recruitment import Candidate
@@ -114,11 +114,25 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 @app.get("/api/health", status_code=200)
 async def health_check():
     """Lightweight production health probe for uptime monitors and container orchestrators"""
+    user_count = 0
+    sample_users = []
+    try:
+        from app.core.database import SessionLocal
+        from app.models.user import User
+        db = SessionLocal()
+        user_count = db.query(User).count()
+        sample_users = [u.email for u in db.query(User).limit(5).all()]
+        db.close()
+    except Exception as e:
+        pass
     return {
         "status": "healthy",
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
-        "database": "connected"
+        "database": "connected",
+        "database_dialect": str(engine.dialect.name),
+        "user_count": user_count,
+        "sample_users": sample_users
     }
 
 # Mount static uploads directory for resumes and documents
