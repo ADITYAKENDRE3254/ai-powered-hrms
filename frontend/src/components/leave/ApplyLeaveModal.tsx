@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../common/Modal';
 import { leaveService } from '../../services/leave.service';
-import { LeaveType, LeaveRequest } from '../../types';
-import { Calendar, AlertCircle, CheckCircle2, UserCheck, ShieldCheck, Sparkles } from 'lucide-react';
+import { LeaveType, LeaveRequest, LeaveBalance } from '../../types';
+import { Calendar, AlertCircle, CheckCircle2, UserCheck, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 interface ApplyLeaveModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLeaveCreated?: (leave: LeaveRequest) => void;
 }
+
+const CASUAL_LEAVE_MAX = 8;
 
 export const ApplyLeaveModal: React.FC<ApplyLeaveModalProps> = ({ isOpen, onClose, onLeaveCreated }) => {
   const [leaveType, setLeaveType] = useState<LeaveType>('CASUAL');
@@ -17,8 +19,14 @@ export const ApplyLeaveModal: React.FC<ApplyLeaveModalProps> = ({ isOpen, onClos
   const [reason, setReason] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [balance, setBalance] = useState<LeaveBalance | null>(null);
 
-  // Compute duration
+  // Fetch leave balance on mount to show remaining CL
+  useEffect(() => {
+    leaveService.getMyLeaveBalance().then(setBalance).catch(() => {});
+  }, []);
+
+  // Compute selected duration
   let duration = 0;
   if (startDate && endDate) {
     const s = new Date(startDate);
@@ -27,6 +35,12 @@ export const ApplyLeaveModal: React.FC<ApplyLeaveModalProps> = ({ isOpen, onClos
       duration = Math.round((e.getTime() - s.getTime()) / (1000 * 3600 * 24)) + 1;
     }
   }
+
+  // Casual leave remaining
+  const clRemaining = balance?.casual_leave ?? CASUAL_LEAVE_MAX;
+  const clUsed = CASUAL_LEAVE_MAX - clRemaining;
+  const clPercent = Math.min(100, (clRemaining / CASUAL_LEAVE_MAX) * 100);
+  const willExceedCL = leaveType === 'CASUAL' && duration > 0 && duration > clRemaining;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +102,61 @@ export const ApplyLeaveModal: React.FC<ApplyLeaveModalProps> = ({ isOpen, onClos
           </select>
         </div>
 
+        {/* ── Casual Leave Balance Indicator ─────────────────────────────── */}
+        {leaveType === 'CASUAL' && (
+          <div className={`p-4 rounded-2xl border text-xs transition-all ${
+            clRemaining === 0
+              ? 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800'
+              : clRemaining <= 2
+              ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
+              : 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800'
+          }`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className={`font-bold ${
+                clRemaining === 0
+                  ? 'text-rose-700 dark:text-rose-300'
+                  : clRemaining <= 2
+                  ? 'text-amber-700 dark:text-amber-300'
+                  : 'text-emerald-700 dark:text-emerald-300'
+              }`}>
+                {clRemaining === 0
+                  ? '⛔ No Casual Leaves Remaining'
+                  : `✅ ${clRemaining} Casual Leave${clRemaining !== 1 ? 's' : ''} Remaining`}
+              </span>
+              <span className="text-slate-500 dark:text-slate-400 font-semibold">
+                {clUsed} used / {CASUAL_LEAVE_MAX} max
+              </span>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full bg-slate-200 dark:bg-navy-700 rounded-full h-2 overflow-hidden">
+              <div
+                className={`h-2 rounded-full transition-all ${
+                  clRemaining === 0
+                    ? 'bg-rose-500'
+                    : clRemaining <= 2
+                    ? 'bg-amber-500'
+                    : 'bg-emerald-500'
+                }`}
+                style={{ width: `${clPercent}%` }}
+              />
+            </div>
+
+            <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mt-1.5">
+              <span>0 days</span>
+              <span className="font-bold text-slate-700 dark:text-slate-300">{clRemaining} remaining</span>
+              <span>8 days max</span>
+            </div>
+
+            {clRemaining === 0 && (
+              <p className="mt-2 text-rose-600 dark:text-rose-400 text-[11px] font-semibold">
+                You have exhausted your casual leave quota. Please select Sick Leave or Earned Leave.
+              </p>
+            )}
+          </div>
+        )}
+        {/* ────────────────────────────────────────────────────────────────── */}
+
         {/* Start & End Dates */}
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -113,8 +182,20 @@ export const ApplyLeaveModal: React.FC<ApplyLeaveModalProps> = ({ isOpen, onClos
           </div>
         </div>
 
+        {/* Pre-flight CL warning — selected days exceed remaining balance */}
+        {willExceedCL && (
+          <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>
+              You selected <strong>{duration} day{duration > 1 ? 's' : ''}</strong> but only{' '}
+              <strong>{clRemaining} casual leave day{clRemaining !== 1 ? 's' : ''}</strong> remain.
+              This request will be rejected. Please reduce the dates or choose a different leave type.
+            </span>
+          </div>
+        )}
+
         {/* Dynamic Multi-Tier Workflow Banner */}
-        {duration > 0 && (
+        {duration > 0 && !willExceedCL && (
           <div
             className={`p-4 rounded-2xl border text-xs leading-relaxed flex items-start gap-3 transition-all ${
               duration === 1
@@ -165,8 +246,8 @@ export const ApplyLeaveModal: React.FC<ApplyLeaveModalProps> = ({ isOpen, onClos
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white shadow-apple flex items-center gap-1.5 transition-all hover:scale-[1.01] active:scale-[0.99]"
+            disabled={isSubmitting || (leaveType === 'CASUAL' && clRemaining === 0)}
+            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed text-white shadow-apple flex items-center gap-1.5 transition-all hover:scale-[1.01] active:scale-[0.99]"
           >
             {isSubmitting ? 'Submitting...' : 'Submit Leave Request'}
           </button>
